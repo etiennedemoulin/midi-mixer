@@ -1,0 +1,19 @@
+{
+  config : {
+    midiDevice : "BCF2000",
+    mode : "BCF2000",
+  },
+  controls : [
+    { patch:"L1_lvl", name:"L1", type:'volume'},
+    { patch:"L2_lvl", name:"L2", type:'volume'},
+    { patch:"L3_lvl", name:"L3", type:'volume'},
+    { patch:"L4_lvl", name:"L4", type:'volume'},
+    { patch:"tr_lvl", name:"TR", type:'volume'},
+    { patch:"rev_lvl", name:"REV", type:'volume'},
+    { patch:"dome_lvl", name:"DOME", type:'volume'},
+    { patch:"spread", name:"SPREAD", type:'linear', range:[0, 1]},
+    { patch:"mod", name:"MOD", type:'linear', range:[1, 100]},
+    { },
+    { patch:"master_lvl", name:"master", type:'volume'},
+  ],
+}

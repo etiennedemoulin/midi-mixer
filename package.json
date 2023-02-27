@@ -1,0 +1,27 @@
+{
+  "name": "midi-mixer",
+  "version": "1.0.0",
+  "description": "Midi mixer routing matrix for Max",
+  "main": "midi-app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/etiennedemoulin/midi-mixer.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/etiennedemoulin/midi-mixer/issues"
+  },
+  "homepage": "https://github.com/etiennedemoulin/midi-mixer#readme",
+  "dependencies": {
+    "easymidi": "^3.0.1",
+    "fs-extra": "^11.1.0",
+    "json5": "^2.2.3",
+    "md5": "^2.3.0",
+    "open": "^8.4.2",
+    "path": "^0.12.7"
+  }
+}
