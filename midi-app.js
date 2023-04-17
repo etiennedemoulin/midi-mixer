@@ -4,7 +4,8 @@ const open = require('open');
 const JSON5 = require('json5');
 const Max = require('max-api');
 const md5 = require('md5');
-var XT = require('node-mcu');
+const XT = require('node-mcu');
+const _ = require('lodash');
 
 let cwd = null;
 let patchPath = null;
@@ -13,12 +14,15 @@ let bankFaderName = [];
 let bankFaderValue = [];
 let config = null;
 
+let boxesDictName = null;
+let handleMessage = true;
+
 function isEmpty(empty) {
   return (Object.keys(empty).length === 0 && empty.constructor === Object)
 }
 
-// generate matrix is called before
-Max.addHandler('init', (name, patchPath) => {
+// Init when Max is ready
+Max.addHandler('init', (name, patchPath, patchIndex) => {
     if (patchPath === '') {
       cwd = process.cwd();
     } else {
@@ -28,10 +32,30 @@ Max.addHandler('init', (name, patchPath) => {
       cwd = `/${cleaned.join('/')}`;
   }
 
-    readConfig(name);
+  boxesDictName = `${patchIndex}_midi-mixer_existing_boxes`;
+
+  readConfig(name);
+
 });
 
+async function debounce(patch, value) {
+  console.log("debounce function is called");
+  let changedControlIndex;
+  for (i in config.controls) {
+    if (config.controls[i].patch === patch) {
+      config.controls[i].value = value;
+      changedControlIndex = i;
+    }
+  }
+  updateFaderView(changedControlIndex);
+  await Max.setDict('midiMaxDict', config.controls);
+}
 
+const throttled = _.throttle(debounce, 20, { 'trailing': true });
+
+Max.addHandler('message', throttled);
+
+// Read configuration file midi.json
 function readConfig(name) {
   if (name === 0) {
     console.log('No config file specified, abort...');
@@ -43,12 +67,12 @@ function readConfig(name) {
 
   if (fs.existsSync(configFilename)) {
     config = JSON5.parse(fs.readFileSync(configFilename));
-    init(config);
+    createPatch(config);
     //dostuff
 
     fs.watchFile(configFilename, () => {
       config = JSON5.parse(fs.readFileSync(configFilename));
-      init(config);
+      createPatch(config);
       //dostuffagain
     });
   } else {
@@ -57,7 +81,36 @@ function readConfig(name) {
   }
 }
 
-async function init(config) {
+
+// Create patch boxes and init fader values
+async function createPatch(config) {
+
+  existingBoxes = await Max.getDict(boxesDictName);
+
+  if (!('list' in existingBoxes)) {
+    existingBoxes.list = [];
+  }
+
+  // delete previous existing boxes
+  existingBoxes.list.forEach(name => {
+    deleteBox(name);
+  });
+
+  existingBoxes.list = [];
+
+  // create patch
+  let pos = 0;
+  for (i in config.controls) {
+    const patch = config.controls[i].patch;
+    generateBox(`receive-${patch}`, "receive", [`${patch}`], { x: 600+pos, y: 400 }, 0);
+    generateBox(`prepend-${patch}`, "prepend", [`${patch}`], { x: 600+pos, y: 430 }, 0);
+    generateLink(`receive-${patch}`, 0, `prepend-${patch}`, 0);
+    generateLink(`prepend-${patch}`, 0, "toNode", 0);
+    pos += 120;
+  }
+
+  // update created boxes
+  await Max.setDict(boxesDictName, existingBoxes);
 
   // init fader mode
   XT.setFaderMode('CH1', 'position', config.config.resolution);
@@ -78,15 +131,12 @@ async function init(config) {
   await Max.setDict('midiMaxDict', config.controls);
   Max.outlet('update bang');
 
-  // initialisation
+  // we start on first bank
   page = 0;
-  bankFaderName = [];
-  bankFaderValue = [];
 
   // update fader values and display
-  updateFaderBank(page);
+  setFaderView();
 }
-
 
 XT.controlMap({
   'button': {
@@ -95,16 +145,15 @@ XT.controlMap({
       'FADER BANK LEFT': function() { updatePage("down") },
     },
   },
-  'fader': function(name, state) { onFaderMove(name, state); },
+  'fader': onFaderMove,
 });
 
 async function onFaderMove( name, state ) {
 
-    if (config === null) {
-      console.log("config is undefined");
-      return;
-    }
-
+  if (config === null) {
+    console.log("config is undefined");
+    return;
+  }
 
   chName = ['CH1','CH2','CH3','CH4','CH5','CH6','CH7','CH8'];
 
@@ -113,20 +162,22 @@ async function onFaderMove( name, state ) {
 
   switch (config.controls[absFaderNumber]) {
     case undefined:
-      // console.log(`no control linked to the fader ${absFaderNumber}`);
       XT.setFader(`CH${relFaderNumber}`,0);
       break;
     default:
       // SHOULD INTERPOLATE
       if (typeof state === "number") {
+
         // update DICT
         config.controls[absFaderNumber].value = state;
-        // send value to Max
-        await Max.setDict('midiMaxDict', config.controls);
-        Max.outlet('update bang');
+
         // update Display
         bankFaderValue[relFaderNumber-1] = state;
         XT.setFaderDisplay(bankFaderValue,'bottom');
+
+        // send value to Max
+        await Max.setDict('midiMaxDict', config.controls);
+        Max.outlet('update bang');
       }
 
   }
@@ -135,24 +186,29 @@ async function onFaderMove( name, state ) {
 
 
 function updatePage(sens) {
-    bankFaderValue = [];
-    bankFaderName = [];
-    countKeys = Object.keys(config.controls).length;
+
+    const keys = Object.keys(config.controls);
+    const lastIndex = parseInt(keys.slice(-1)[0]);
+
     switch (sens) {
         case 'up':
-            if (page < Math.floor(countKeys/8)) {
+
+            if (page < Math.floor(lastIndex/8)) {
                 page += 1;
-                console.log(`page ${page}`);
-                updateFaderBank(page);
+                // console.log(`page ${page}`);
+                setFaderView();
+
             } else {
                 // console.log("cant go up than this")
             }
         break;
         case 'down':
             if (page > 0) {
+
                 page -= 1;
-                console.log(`page ${page}`);
-                updateFaderBank(page);
+                // console.log(`page ${page}`);
+                setFaderView();
+
             } else {
                 // console.log("cant go less than 0")
             }
@@ -161,28 +217,92 @@ function updatePage(sens) {
     }
 }
 
-function updateFaderBank(page) {
+
+function setFaderView() {
     const keys = Object.keys(config.controls);
-    const iMax = Math.ceil(keys.length/8) * 8;
+    const lastIndex = parseInt(keys.slice(-1)[0]);
+
+    const iMax = Math.ceil(lastIndex/8) * 8;
+
+    // reset sub-view
+    bankFaderValue = [];
+    bankFaderName = [];
+
+
     for (let i=1;i<=iMax;i++) {
         if (i > (page*8) && i <= ((page+1)*8)) {
             if (config.controls[i] !== undefined) {
+
+              // fader has a value
               const faderIndex = (i - 1) % 8 + 1;
-              XT.setFader(`CH${faderIndex}`, config.controls[i].value);
-              bankFaderValue.push(config.controls[i].value);
-              bankFaderName.push(config.controls[i].name);
+              const destination = config.controls[i].patch;
+              const value = config.controls[i].value;
+              const name = config.controls[i].name;
+
+              // set value
+              XT.setFader(`CH${faderIndex}`, value);
+
+              // subview for displayed faders
+              bankFaderValue.push(value);
+              bankFaderName.push(name);
+
             } else {
+              // fader has not value
               const faderIndex = (i - 1) % 8 + 1;
+
               XT.setFader(`CH${faderIndex}`, 0);
+
               bankFaderName.push('');
               bankFaderValue.push('');
             }
         }
     }
-
+    // update display
     XT.setFaderDisplay(bankFaderName,'top');
     XT.setFaderDisplay(bankFaderValue,'bottom');
 
+}
+
+function updateFaderView(i) {
+  // retrieve state for index
+  const state = config.controls[i];
+
+  // compute relative index
+  let relIndex = (i - 1) % 8 + 1;
+  if ( relIndex + (page*8) === parseFloat(i) ) {
+    // ok
+  } else {
+    relIndex = null;
+  }
+
+  if (relIndex) {
+    // set value
+    XT.setFader(`CH${relIndex}`, state.value);
+
+    // update sub view
+    bankFaderValue[relIndex-1] = state.value;
+
+    // set display
+    XT.setFaderDisplay(bankFaderValue,'bottom');
+  }
+
+}
+
+function generateBox(varName, boxName, args, position, presentation, comment) {
+  existingBoxes.list.push(varName);
+
+  const msg = `thispatcher script newobject newobj @text "${boxName} ${args.join(' ')}" @varname ${varName} @patching_position ${position.x} ${position.y} @presentation ${presentation} @comment ${comment}`;
+  Max.outlet(msg);
+}
+
+function deleteBox(varName) {
+  const msg = `thispatcher script delete ${varName}`;
+  Max.outlet(msg);
+}
+
+function generateLink(varNameOut, outlet, varNameIn, inlet) {
+  const msg = `thispatcher script connect ${varNameOut} ${outlet} ${varNameIn} ${inlet}`;
+  Max.outlet(msg);
 }
 
 
@@ -194,6 +314,6 @@ XT.on('debug', function(msg) {
 
 XT.start(function(msg) {
     console.log('Midi Init: ' + msg);
-},{port:0});
+},{port:1});
 
 

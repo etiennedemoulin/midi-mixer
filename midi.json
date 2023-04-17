@@ -2,10 +2,10 @@
   config : {
     midiDevice : 'BCF2000',
     mode : "BCF2000",
-    resolution : 256, // PB WITH ARRONDI ???
+    resolution : 128,
   },
   controls : {
-    // '1': { patch:"pouet", name:"pouet", type:'linear'},
+    '1': { patch:"pouet", name:"pouet", type:'linear'},
     '2': { patch:"L1_lvl", name:"L1", type:'volume'},
     '3': { patch:"toto", name:"toto", type:'volume'},
     // '3': { patch:"L2_lvl", name:"L2", type:'volume'},
@@ -14,8 +14,8 @@
     // '7': { patch:"tr_lvl", name:"TR", type:'volume'},
     // '8': { patch:"rev_lvl", name:"REV", type:'volume'},
     // '9': { patch:"dome_lvl", name:"DOME", type:'volume'},
-    // '10': { patch:"spread", name:"SPREAD", type:'linear', range:[0, 1]},
-    // '11': { patch:"mod", name:"MOD", type:'linear', range:[1, 100]},
+    // '1': { patch:"spread", name:"SPREAD", type:'linear', range:[0, 1]},
+    '11': { patch:"mod", name:"MOD", type:'linear', range:[1, 100]},
     '8': { patch:"master_lvl", name:"master", type:'volume'},
   },
 }
