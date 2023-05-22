@@ -24,10 +24,10 @@ function isEmpty(empty) {
 
 function computeFaderValue(i) {
   let value;
-  switch (config.controls[i].type) {
+  switch (config[i].type) {
     case 'linear': {
-      const input = config.controls[i].value;
-      const range = config.controls[i].range;
+      const input = config[i].value;
+      const range = config[i].range;
       const sens = (range[1] > range[0]) ? 1 : -1;
       const amplitude = Math.abs(range[1] - range[0]);
       const raw = sens * (input - range[0]) / amplitude;
@@ -35,7 +35,7 @@ function computeFaderValue(i) {
       break;
     }
     case 'volume': {
-      const input = config.controls[i].value;
+      const input = config[i].value;
       const valueInList = device.fader.reduce((a, b) => {
         return Math.abs(b - input) < Math.abs(a - input) ? b : a;
       });
@@ -49,7 +49,7 @@ function computeFaderValue(i) {
 }
 
 // Init when Max is ready
-Max.addHandler('init', (name, patchPath, patchIndex) => {
+Max.addHandler('init', (name, patchPath, patchIndex, midiDevice, controller) => {
     if (patchPath === '') {
       cwd = process.cwd();
     } else {
@@ -61,21 +61,42 @@ Max.addHandler('init', (name, patchPath, patchIndex) => {
 
   boxesDictName = `${patchIndex}_midi-mixer_existing_boxes`;
 
+  // Init XT lib
+  const port = XT.getPorts().findIndex( (e) => e === midiDevice );
+  if (port !== -1) {
+    XT.start(function(msg) {
+      console.log('Midi Init:', midiDevice);
+      // console.log('Midi Init: ' + msg);
+    },{port:port});
+  } else {
+    console.log("[midi.mixer] - Cannot find midi device !");
+    throw new Error("Can't find midi device - abort.");
+  }
+
+  // set fader lib
+  try {
+    device = require(`../Controllers/${controller}.js`);
+    console.log(`[midi.mixer] - Using the ${controller} midi mapping`);
+  } catch {
+    console.log(`[midi.mixer] - Can't find the ${controller} midi mapping`);
+    throw new Error("Can't find this midicontroller mapping");
+  }
+
   readConfig(name);
 
 });
 
 async function debounce(patch, value) {
   let changedControlIndex;
-  for (i in config.controls) {
-    if (config.controls[i].patch === patch) {
-      config.controls[i].value = value;
+  for (i in config) {
+    if (config[i].patch === patch) {
+      config[i].value = value;
       changedControlIndex = i;
     }
   }
-  if (config.controls[changedControlIndex].state === 'release') {
+  if (config[changedControlIndex].state === 'release') {
     updateFaderView(changedControlIndex);
-    await Max.setDict('midiMaxDict', config.controls);
+    await Max.setDict('midiMaxDict', config);
   }
 }
 
@@ -84,22 +105,27 @@ const throttled = _.throttle(debounce, 20, { 'trailing': true });
 Max.addHandler('message', throttled);
 
 Max.addHandler('edit', (filename) => {
-  if (configFilename === null) {
-    console.log("No configuration file specified, abord.");
-    process.exit()
-  }
   open(configFilename);
 });
 
-Max.addHandler('getDevices', (filename) => {
-  console.log(XT.getPorts());
+Max.addHandler('getPorts', () => {
+  XT.getPorts().forEach((e,i) => {
+    console.log(`[midi.mixer] - #${i}: ${e}`);
+  });
+});
+
+Max.addHandler('getDevices', () => {
+  const controllers = fs.readdirSync('../Controllers');
+  controllers.forEach(e => {
+    console.log(`${e.split('.').shift()}`);
+  });
 });
 
 // Read configuration file midi.json
 function readConfig(name) {
   if (name === 0) {
-    throw new Error("No configuration file specified, abort...");
-    process.exit();
+    name = "../help/default.json";
+    console.log('[midi.mixer] - Using default configuration file: ', path.resolve(process.cwd(), '../help/default.json'));
   }
 
   // read config file
@@ -140,8 +166,8 @@ async function createPatch(config) {
 
   // create patch
   let pos = 0;
-  for (i in config.controls) {
-    const patch = config.controls[i].patch;
+  for (i in config) {
+    const patch = config[i].patch;
     generateBox(`receive-${patch}`, "receive", [`${patch}`], { x: 600+pos, y: 400 }, 0);
     generateBox(`prepend-${patch}`, "prepend", [`${patch}`], { x: 600+pos, y: 430 }, 0);
     generateLink(`receive-${patch}`, 0, `prepend-${patch}`, 0);
@@ -152,23 +178,6 @@ async function createPatch(config) {
   // update created boxes
   await Max.setDict(boxesDictName, existingBoxes);
 
-  // Init XT lib
-  const port = XT.getPorts().findIndex( (e) => e === config.config.midiDevice );
-  if (port !== -1) {
-    XT.start(function(msg) {
-      console.log('Midi Init: ' + msg);
-    },{port:port});
-  } else {
-    throw new Error("Can't find midi device - abort.");
-  }
-
-  // set fader lib
-  try {
-    device = require(`../Controllers/${config.config.controller}.js`);
-  } catch {
-    throw new Error("Can't find this midicontroller mapping");
-  }
-
   // init fader mode
   XT.setFaderMode('CH1', 'position', device.fader.length);
   XT.setFaderMode('CH2', 'position', device.fader.length);
@@ -178,24 +187,25 @@ async function createPatch(config) {
   XT.setFaderMode('CH6', 'position', device.fader.length);
   XT.setFaderMode('CH7', 'position', device.fader.length);
   XT.setFaderMode('CH8', 'position', device.fader.length);
+  XT.setFaderMode('MAIN', 'position', device.fader.length);
 
   // init fader values
-  for (i in config.controls) {
-    switch (config.controls[i].type) {
+  for (i in config) {
+    switch (config[i].type) {
       case 'linear':
-        config.controls[i].value = config.controls[i].range[0];
+        config[i].value = config[i].range[0];
         break;
       case 'volume':
-        config.controls[i].value = device.fader[0];
+        config[i].value = device.fader[0];
         break;
       default:
         break;
     }
-    config.controls[i].state = 'release';
+    config[i].state = 'release';
   }
 
   // send to max
-  await Max.setDict('midiMaxDict', config.controls);
+  await Max.setDict('midiMaxDict', config);
   Max.outlet('update bang');
 
   // we start on first bank
@@ -227,17 +237,26 @@ async function onFaderMove( name, state ) {
   absFaderNumber = chName.indexOf(name) + 1 + page * 8;
   relFaderNumber = chName.indexOf(name) + 1;
 
-  switch (config.controls[absFaderNumber]) {
+  if (absFaderNumber === 0) {
+    absFaderNumber = 'MAIN';
+    relFaderNumber = null;
+  }
+
+  switch (config[absFaderNumber]) {
     case undefined:
-      XT.setFader(`CH${relFaderNumber}`,0);
+      if (relFaderNumber) {
+        XT.setFader(`CH${relFaderNumber}`,0);
+      } else {
+        XT.setFader(absFaderNumber, 0);
+      }
       break;
     default:
       // SHOULD INTERPOLATE
       if (typeof state === "number") {
         let value;
-        switch (config.controls[absFaderNumber].type) {
+        switch (config[absFaderNumber].type) {
           case 'linear':
-            const range = config.controls[absFaderNumber].range;
+            const range = config[absFaderNumber].range;
             const sens = (range[1] > range[0]) ? 1 : -1;
             const raw = state / (device.fader.length - 1);
             const amplitude = Math.abs(range[1] - range[0]);
@@ -252,19 +271,21 @@ async function onFaderMove( name, state ) {
         }
 
         // update DICT
-        config.controls[absFaderNumber].value = value;
+        config[absFaderNumber].value = value;
 
         // update Display
-        bankFaderValue[relFaderNumber-1] = value;
-        XT.setFaderDisplay(bankFaderValue,'bottom');
+        if (relFaderNumber) {
+          bankFaderValue[relFaderNumber-1] = value;
+          XT.setFaderDisplay(bankFaderValue,'bottom');
+        }
 
         // send value to Max
-        await Max.setDict('midiMaxDict', config.controls);
+        await Max.setDict('midiMaxDict', config);
         Max.outlet('update bang');
       } else if (state === 'touch') {
-        config.controls[absFaderNumber].state = 'touch';
+        config[absFaderNumber].state = 'touch';
       } else if (state === 'release') {
-        config.controls[absFaderNumber].state = 'release';
+        config[absFaderNumber].state = 'release';
       }
     break;
   }
@@ -273,8 +294,9 @@ async function onFaderMove( name, state ) {
 
 function updatePage(sens) {
 
-    const keys = Object.keys(config.controls);
-    const lastIndex = parseInt(keys.slice(-1)[0]);
+    const keys = Object.keys(config);
+    const filteredKeys = keys.filter(e => { return e !== 'MAIN' });
+    const lastIndex = parseInt(filteredKeys.slice(-1)[0] - 1);
 
     switch (sens) {
         case 'up':
@@ -305,8 +327,9 @@ function updatePage(sens) {
 
 
 function setFaderView() {
-  const keys = Object.keys(config.controls);
-  const lastIndex = parseInt(keys.slice(-1)[0]);
+  const keys = Object.keys(config);
+  const filteredKeys = keys.filter(e => { return e !== 'MAIN' });
+  const lastIndex = parseInt(filteredKeys.slice(-1)[0]);
 
   const iMax = Math.ceil(lastIndex/8) * 8;
 
@@ -314,16 +337,23 @@ function setFaderView() {
   bankFaderValue = [];
   bankFaderName = [];
 
+  // special case for Main fader
+  if (config['MAIN'] !== undefined) {
+    XT.setFader('MAIN', computeFaderValue('MAIN'));
+  } else {
+    XT.setFader('MAIN', 0);
+  }
 
+  // normal case
   for (let i=1;i<=iMax;i++) {
       if (i > (page*8) && i <= ((page+1)*8)) {
-          if (config.controls[i] !== undefined) {
+          if (config[i] !== undefined) {
 
             // fader has a value
             const faderIndex = (i - 1) % 8 + 1;
-            const destination = config.controls[i].patch;
-            const value = config.controls[i].value
-            const name = config.controls[i].name;
+            const destination = config[i].patch;
+            const value = config[i].value
+            const name = config[i].name;
 
             // set value
             XT.setFader(`CH${faderIndex}`, computeFaderValue(i));
@@ -349,7 +379,7 @@ function setFaderView() {
 }
 
 function updateFaderView(i) {
-  const value = config.controls[i].value;
+  const value = config[i].value;
 
   // compute relative index
   let relIndex = (i - 1) % 8 + 1;
@@ -368,6 +398,10 @@ function updateFaderView(i) {
 
     // set display
     XT.setFaderDisplay(bankFaderValue,'bottom');
+  }
+
+  if (i === 'MAIN') {
+    XT.setFader('MAIN', computeFaderValue(i));
   }
 
 }

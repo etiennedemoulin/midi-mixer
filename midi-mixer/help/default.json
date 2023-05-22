@@ -1,0 +1,11 @@
+{
+  '2': { patch:"midi-2", name:"2", type:'linear', range: [0, 127] },
+  '3': { patch:"midi-3", name:"3", type:'linear', range: [0, 127] },
+  '5': { patch:"midi-5", name:"5", type:'linear', range: [0, 127] },
+  '6': { patch:"midi-6", name:"6", type:'linear', range: [0, 127] },
+  '7': { patch:"midi-7", name:"7", type:'linear', range: [0, 127] },
+  '8': { patch:"midi-8", name:"8", type:'volume' },
+  '9': { patch:"midi-9", name:"9", type:'volume' },
+  '24': { patch:"midi-24", name:"24", type:'volume' },
+  'MAIN': { patch:"master_lvl", name:"master", type:'volume' },
+}
