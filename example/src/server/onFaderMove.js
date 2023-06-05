@@ -4,9 +4,9 @@ export function onFaderMove( name, state ) {
   const chName = ['CH1','CH2','CH3','CH4','CH5','CH6','CH7','CH8'];
 
   const index = chName.indexOf(name);
+  console.log(name, state);
   const absFaderNumber = (index !== -1) ? (index + 1 + page * 8) : 'MAIN';
   const relFaderNumber = (index !== -1) ? (index + 1) : null;
-
   const tracks = Server.stateManager.getCollection('track');
   console.log('tracks________', tracks);
 

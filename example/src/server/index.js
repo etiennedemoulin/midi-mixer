@@ -4,8 +4,7 @@ import { Server } from '@soundworks/core/server.js';
 import { loadConfig } from '../utils/load-config.js';
 import '../utils/catch-unhandled-errors.js';
 
-import { onFaderMove } from './onFaderMove.js';
-import { setFaderView, updateFaderView, updatePage } from './faderView.js';
+import { setFaderView, setMixerView } from './faderView.js';
 import { userToRaw, rawToUser, getFaderRange } from './faderHelper.js';
 import { trackSchema } from './schemas/tracks.js';
 import * as device from './Controllers/studer.cjs';
@@ -25,6 +24,14 @@ console.log(`
 - [pid: ${process.pid}]
 --------------------------------------------------------
 `);
+
+function updatePage(activePage) {
+// get a list of 8 faders values / 8 names from activePage
+}
+
+function updateFader(activePage) {
+// get a list of 8 faders values (for display) and track to be updated
+}
 
 /**
  * Create the soundworks server
@@ -90,7 +97,7 @@ server.stateManager.registerUpdateHook('track', (updates, currentValues, context
 });
 
 // Init XT lib
-const midiDevice = "IAC Driver Bus 1"
+const midiDevice = "Euphonix MIDI Euphonix Port 1"
 const port = MCU.getPorts().findIndex(e => e === midiDevice);
 
 if (port !== -1) {
@@ -116,19 +123,20 @@ MCU.setFaderMode('CH7', 'position', 0);
 MCU.setFaderMode('CH8', 'position', 0);
 MCU.setFaderMode('MAIN', 'position', 0);
 
-
-tracks.forEach(track => {
-  track.onUpdate(async (updates, oldValues, context) => {
-    if (context.source !== 'midi') {
-      setFaderView(
-        track.getValues().trackId,
-        updates.faderBytes,
-        activePage);
-    };
-  });
+const trackCollection = await server.stateManager.getCollection('track');
+trackCollection.onUpdate((state, newValues, oldValues, context) => {
+  if (context.source !== 'midi') {
+    console.log("trackCollection onUpdate");
+    // updateFader();
+    // setFaderView(
+    //   state.trackId,
+    //   newValues.faderBytes,
+    //   activePage);
+  }
 });
 
-setMixerView(activePage);
+// update all view
+updatePage(activePage);
 
 MCU.controlMap({
   'button': {
@@ -138,20 +146,22 @@ MCU.controlMap({
         const lastFader = idMap[idMap.length - 1];
         if (activePage < Math.floor(lastFader / 8)) {
           activePage++;
-          setMixerView(activePage);
+          updatePage(activePage);
         }
        },
       'FADER BANK LEFT': function() {
         if (activePage > 0) {
           activePage--;
-          setMixerView(activePage);
+          updatePage(activePage);
         }
       },
     },
   },
-  // 'fader': onFaderMove,
+  'fader': function(name, state) {
+
+  },
 });
 
 MCU.on('debug', (e) => {
-  console.log(e);
+  // console.log(e);
 });

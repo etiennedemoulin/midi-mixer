@@ -1398,7 +1398,7 @@ function setFader(fader, value) {
     var payload = [];
     const msb = value >> 7;
     const lsb = 0;
-    console.log('@TOFIX!')
+    // console.log('@TOFIX!')
 
     payload = [faderMap[fader], lsb, msb];
     sendMidi(payload);
