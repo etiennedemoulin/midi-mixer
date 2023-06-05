@@ -31,7 +31,7 @@ function computeFaderValue(i) {
       const sens = (range[1] > range[0]) ? 1 : -1;
       const amplitude = Math.abs(range[1] - range[0]);
       const raw = sens * (input - range[0]) / amplitude;
-      value = raw * (device.fader.length - 1);
+      value = raw * (Math.pow(2,14) - 1);
       break;
     }
     case 'volume': {
@@ -87,22 +87,22 @@ Max.addHandler('init', (name, patchPath, patchIndex, midiDevice, controller) => 
 });
 
 async function debounce(patch, value) {
-  let changedControlIndex;
-  for (i in config) {
-    if (config[i].patch === patch) {
-      config[i].value = value;
-      changedControlIndex = i;
+  if (config) {
+    let changedControlIndex;
+    for (i in config) {
+      if (config[i].patch === patch) {
+        config[i].value = value;
+        changedControlIndex = i;
+      }
     }
-  }
-  if (config[changedControlIndex].state === 'release') {
-    updateFaderView(changedControlIndex);
-    await Max.setDict('midiMaxDict', config);
+    if (config[changedControlIndex].state === 'release') {
+      updateFaderView(changedControlIndex);
+      await Max.setDict('midiMaxDict', config);
+    }
   }
 }
 
-const throttled = _.throttle(debounce, 20, { 'trailing': true });
-
-Max.addHandler('message', throttled);
+Max.addHandler('message', debounce);
 
 Max.addHandler('edit', (filename) => {
   open(configFilename);
@@ -170,8 +170,10 @@ async function createPatch(config) {
     const patch = config[i].patch;
     generateBox(`receive-${patch}`, "receive", [`${patch}`], { x: 600+pos, y: 400 }, 0);
     generateBox(`prepend-${patch}`, "prepend", [`${patch}`], { x: 600+pos, y: 430 }, 0);
+    generateBox(`speedlim-${patch}`, "speedlim", [100], { x: 600+pos, y: 460 }, 0);
     generateLink(`receive-${patch}`, 0, `prepend-${patch}`, 0);
-    generateLink(`prepend-${patch}`, 0, "toNode", 0);
+    generateLink(`prepend-${patch}`, 0, `speedlim-${patch}`, 0);
+    generateLink(`speedlim-${patch}`, 0, "toNode", 0);
     pos += 120;
   }
 
@@ -179,15 +181,15 @@ async function createPatch(config) {
   await Max.setDict(boxesDictName, existingBoxes);
 
   // init fader mode
-  XT.setFaderMode('CH1', 'position', device.fader.length);
-  XT.setFaderMode('CH2', 'position', device.fader.length);
-  XT.setFaderMode('CH3', 'position', device.fader.length);
-  XT.setFaderMode('CH4', 'position', device.fader.length);
-  XT.setFaderMode('CH5', 'position', device.fader.length);
-  XT.setFaderMode('CH6', 'position', device.fader.length);
-  XT.setFaderMode('CH7', 'position', device.fader.length);
-  XT.setFaderMode('CH8', 'position', device.fader.length);
-  XT.setFaderMode('MAIN', 'position', device.fader.length);
+  XT.setFaderMode('CH1', 'position', Math.pow(2,14));
+  XT.setFaderMode('CH2', 'position', Math.pow(2,14));
+  XT.setFaderMode('CH3', 'position', Math.pow(2,14));
+  XT.setFaderMode('CH4', 'position', Math.pow(2,14));
+  XT.setFaderMode('CH5', 'position', Math.pow(2,14));
+  XT.setFaderMode('CH6', 'position', Math.pow(2,14));
+  XT.setFaderMode('CH7', 'position', Math.pow(2,14));
+  XT.setFaderMode('CH8', 'position', Math.pow(2,14));
+  XT.setFaderMode('MAIN', 'position', Math.pow(2,14));
 
   // init fader values
   for (i in config) {
@@ -215,6 +217,8 @@ async function createPatch(config) {
   setFaderView();
 }
 
+const faderThrottled = _.throttle(onFaderMove, 1, { 'trailing':true });
+
 XT.controlMap({
   'button': {
     'down': {
@@ -222,7 +226,7 @@ XT.controlMap({
       'FADER BANK LEFT': function() { updatePage("down") },
     },
   },
-  'fader': onFaderMove
+  'fader': faderThrottled,
 });
 
 async function onFaderMove( name, state ) {
@@ -247,45 +251,61 @@ async function onFaderMove( name, state ) {
       if (relFaderNumber) {
         XT.setFader(`CH${relFaderNumber}`,0);
       } else {
-        XT.setFader(absFaderNumber, 0);
+        XT.setFader(absFaderNumber,0);
       }
       break;
     default:
       // SHOULD INTERPOLATE
-      if (typeof state === "number") {
-        let value;
-        switch (config[absFaderNumber].type) {
-          case 'linear':
-            const range = config[absFaderNumber].range;
-            const sens = (range[1] > range[0]) ? 1 : -1;
-            const raw = state / (device.fader.length - 1);
-            const amplitude = Math.abs(range[1] - range[0]);
-            value = range[0] + sens * (raw * amplitude);
-            // console.log(value);
-            break;
-          case 'volume':
-            value = device.fader[state];
-            break;
-          default:
-            break;
-        }
-
-        // update DICT
-        config[absFaderNumber].value = value;
-
-        // update Display
-        if (relFaderNumber) {
-          bankFaderValue[relFaderNumber-1] = value;
-          XT.setFaderDisplay(bankFaderValue,'bottom');
-        }
-
-        // send value to Max
-        await Max.setDict('midiMaxDict', config);
-        Max.outlet('update bang');
-      } else if (state === 'touch') {
+      if (state === 'touch') {
+        // console.log('touch');
         config[absFaderNumber].state = 'touch';
       } else if (state === 'release') {
+        // console.log('release');
         config[absFaderNumber].state = 'release';
+      } else {
+        // if (config[absFaderNumber].state === 'touch') {
+        if (true) {
+          // console.log('pouet');
+          let value;
+          switch (config[absFaderNumber].type) {
+            case 'linear':
+              const range = config[absFaderNumber].range;
+              const sens = (range[1] > range[0]) ? 1 : -1;
+              const raw = state / (Math.pow(2,14) - 1);
+              const amplitude = Math.abs(range[1] - range[0]);
+              value = range[0] + sens * (raw * amplitude);
+              // console.log(value);
+              break;
+            case 'volume':
+              const index = Math.floor(Math.pow(2,14) / device.fader.length);
+              value = device.fader[index];
+              break;
+            default:
+              break;
+          }
+
+          // console.log(value, state);
+          // update DICT
+          config[absFaderNumber].value = value;
+
+          // update Display
+          if (relFaderNumber) {
+            bankFaderValue[relFaderNumber-1] = value;
+            // XT.setFaderDisplay(bankFaderValue,'bottom');
+          }
+
+          // feedback value
+          // @TODO -> tout échantillonner sur 14bits comme ça on est sur d'avoir la bonne valeur.
+          // if (relFaderNumber) {
+          //   XT.setFader(`CH${relFaderNumber}`,state);
+          // } else {
+          //   XT.setFader(absFaderNumber,state);
+          // }
+
+          // send value to Max
+          await Max.setDict('midiMaxDict', config);
+          Max.outlet('update bang');
+        }
       }
     break;
   }
@@ -303,7 +323,7 @@ function updatePage(sens) {
 
             if (page < Math.floor(lastIndex/8)) {
                 page += 1;
-                // console.log(`page ${page}`);
+                console.log(`page ${page}`);
                 setFaderView();
 
             } else {
@@ -314,7 +334,7 @@ function updatePage(sens) {
             if (page > 0) {
 
                 page -= 1;
-                // console.log(`page ${page}`);
+                console.log(`page ${page}`);
                 setFaderView();
 
             } else {
@@ -374,8 +394,8 @@ function setFaderView() {
       }
   }
   // update display
-  XT.setFaderDisplay(bankFaderName,'top');
-  XT.setFaderDisplay(bankFaderValue,'bottom');
+  // XT.setFaderDisplay(bankFaderName,'top');
+  // XT.setFaderDisplay(bankFaderValue,'bottom');
 }
 
 function updateFaderView(i) {
@@ -397,7 +417,7 @@ function updateFaderView(i) {
     bankFaderValue[relIndex-1] = value;
 
     // set display
-    XT.setFaderDisplay(bankFaderValue,'bottom');
+    // XT.setFaderDisplay(bankFaderValue,'bottom');
   }
 
   if (i === 'MAIN') {
@@ -424,3 +444,12 @@ function generateLink(varNameOut, outlet, varNameIn, inlet) {
 }
 
 Max.outlet('bootstraped');
+
+
+XT.on('debug', (msg) => {
+  // console.log(msg);
+});
+
+XT.on('action', (action) => {
+  // console.log(action);
+});
