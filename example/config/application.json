@@ -1,0 +1,10 @@
+{
+  name: 'example',
+  author: '',
+  clients: {
+    player: {
+      target: 'browser',
+      default: true,
+    },
+  },
+}
