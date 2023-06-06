@@ -100,31 +100,15 @@ async function main($container) {
   tracks.onUpdate(() => $layout.requestUpdate());
   let component = [];
 
-  // render Main track ->
-  const mainTrack = tracks.find(e => e.get('trackId') === 'MAIN');
-  if (mainTrack) {
-    component.push(renderTrack(mainTrack));
-  }
-
-
-  let idMap = tracks.get('trackId');
-  // remove MAIN from idMap
-  idMap = removeFromArray(idMap, 'MAIN');
-  console.log(idMap);
-
-  let counter = 1;
-  while (counter <= idMap[idMap.length-1]) {
-    if (counter === idMap[0]) {
-      const e = tracks.find(e => e.get('trackId') === idMap[0]);
-      const comp = renderTrack(e);
+  tracks.forEach(track => {
+    if (track.get('trackId') !== null) {
+      const comp = renderTrack(track);
       component.push(comp);
-      idMap.shift();
     } else {
-      const comp = renderEmptyTrack(counter);
+      const comp = renderEmptyTrack(track.get('id'));
       component.push(comp);
-    };
-    counter++;
-  };
+    }
+  });
 
   for (let i in component) {
     $layout.addComponent(component[i]);

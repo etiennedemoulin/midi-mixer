@@ -1,14 +1,14 @@
 export default {
-  '2': {
-    patch:"fader1",
-    name:"1",
-    type:'volume'
-  },
   '3': {
     patch:'pouet',
     name:'mile',
     type:'linear',
     range: [10,2]
+  },
+  '2': {
+    patch:"fader1",
+    name:"1",
+    type:'volume'
   },
   '5': {
     patch:'fader5',

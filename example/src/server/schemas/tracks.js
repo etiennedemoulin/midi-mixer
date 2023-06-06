@@ -9,7 +9,8 @@ export const trackSchema = {
     type:'any',
     min:0,
     max:Infinity,
-    default:0,
+    default:null,
+    nullable: true
   },
   patch: {
     type: 'string',
@@ -49,7 +50,8 @@ export const trackSchema = {
   },
   faderRange: {
     type: 'any',
-    default: [],
+    default: null,
+    nullable: true,
   },
   mute: {
     type:'boolean',

@@ -4,8 +4,8 @@ import { Server } from '@soundworks/core/server.js';
 import { loadConfig } from '../utils/load-config.js';
 import '../utils/catch-unhandled-errors.js';
 
-import { setFaderView, setMixerView } from './faderView.js';
-import { userToRaw, rawToUser, getFaderRange } from './faderHelper.js';
+import { setFaderView, setMixerView } from './faderCommunicator.js';
+import { userToRaw, rawToUser, getFaderRange } from './helpers.js';
 import { trackSchema } from './schemas/tracks.js';
 import * as device from './Controllers/studer.cjs';
 import * as MCU from './mackie-control.cjs';
@@ -25,14 +25,6 @@ console.log(`
 --------------------------------------------------------
 `);
 
-function updatePage(activePage) {
-// get a list of 8 faders values / 8 names from activePage
-}
-
-function updateFader(activePage) {
-// get a list of 8 faders values (for display) and track to be updated
-}
-
 /**
  * Create the soundworks server
  */
@@ -43,27 +35,37 @@ server.useDefaultApplicationTemplate();
 await server.start();
 
 // generate schema from midiConfig
-const configKeys = Object.keys(midiConfig);
 server.stateManager.registerSchema('track', trackSchema);
 let tracks = [];
 
-for (let i in configKeys) {
-  const trackId = (configKeys[i] !== 'MAIN') ?
-    parseInt(configKeys[i]) : configKeys[i];
-  const cfg = midiConfig[trackId];
-  const range = getFaderRange(cfg);
+// replace 'MAIN' key par 0
+midiConfig['0'] = midiConfig['MAIN'];
+delete midiConfig['MAIN'];
+
+let configKeys = Object.keys(midiConfig);
+configKeys = configKeys.map(e => parseInt(e));
+
+for (let i = 0; i < (Math.max(...configKeys) + 1); i++) {
+  const trackId = configKeys.find(e => (e === i));
+  // console.log(trackId)
   tracks[i] = await server.stateManager.create('track');
-  tracks[i].set(
-    {
-      id: parseInt(i),
-      trackId: trackId,
-      patch: cfg.patch,
-      name: cfg.name,
-      faderType: cfg.type,
-      faderRange: range,
-    }
-  );
-}
+  if (trackId === undefined) {
+    tracks[i].set({ id: i });
+  } else {
+    const cfg = midiConfig[trackId];
+    const range = getFaderRange(cfg);
+    tracks[i].set(
+      {
+        id: i,
+        trackId: trackId,
+        patch: cfg.patch,
+        name: cfg.name,
+        faderType: cfg.type,
+        faderRange: range,
+      }
+    );
+  };
+};
 
 server.stateManager.registerUpdateHook('track', (updates, currentValues, context) => {
   if (context.source !== 'hook') {
@@ -126,6 +128,7 @@ MCU.setFaderMode('MAIN', 'position', 0);
 const trackCollection = await server.stateManager.getCollection('track');
 trackCollection.onUpdate((state, newValues, oldValues, context) => {
   if (context.source !== 'midi') {
+    // set fader view -> track, value, page, [list all dB values](for display)
     console.log("trackCollection onUpdate");
     // updateFader();
     // setFaderView(
@@ -135,8 +138,12 @@ trackCollection.onUpdate((state, newValues, oldValues, context) => {
   }
 });
 
+trackCollection.forEach(track => {
+  console.log(track);
+})
+
 // update all view
-updatePage(activePage);
+setMixerView(activePage, trackCollection);
 
 MCU.controlMap({
   'button': {
@@ -146,19 +153,21 @@ MCU.controlMap({
         const lastFader = idMap[idMap.length - 1];
         if (activePage < Math.floor(lastFader / 8)) {
           activePage++;
-          updatePage(activePage);
+          setMixerView(activePage, trackCollection);
         }
        },
       'FADER BANK LEFT': function() {
         if (activePage > 0) {
           activePage--;
-          updatePage(activePage);
+          setMixerView(activePage, trackCollection);
         }
       },
     },
   },
   'fader': function(name, state) {
-
+// compute trackID :
+// const absFaderNumber = (index !== -1) ? (index + 1 + page * 8) : 'MAIN';
+// track.set({faderUser: e.detail.value}, {source:'web'})}
   },
 });
 
