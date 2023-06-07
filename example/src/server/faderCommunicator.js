@@ -1,10 +1,10 @@
 import * as MCU from './mackie-control.cjs';
 
-function getNamesFromPage(activePage, absIndex, names) {
+function getNamesFromPage(activePage, names) {
   const returnArray = [];
 
   for (let i = 0; i < names.length; i++) {
-    if (i > (activePage * 8) && absIndex <= ((activePage + 1) * 8) && absIndex !== 0) {
+    if (i > (activePage * 8) && i <= ((activePage + 1) * 8)) {
         returnArray.push(names[i]);
     }
   };
@@ -12,11 +12,11 @@ function getNamesFromPage(activePage, absIndex, names) {
   return returnArray;
 }
 
-function getValuesFromPage(activePage, absIndex, faderUser) {
+function getValuesFromPage(activePage, faderUser) {
   const returnArray = [];
 
   for (let i = 0; i < faderUser.length; i++) {
-    if (i > (activePage * 8) && absIndex <= ((activePage + 1) * 8) && absIndex !== 0) {
+    if (i > (activePage * 8) && i <= ((activePage + 1) * 8)) {
         returnArray.push(faderUser[i]);
     }
   };
@@ -26,7 +26,6 @@ function getValuesFromPage(activePage, absIndex, faderUser) {
 
 // total update : 8 faders + 2 displays
 export async function setMixerView(activePage, tracks) {
-  // const tracksId = trackCollection.get('trackId');
   const tracksId = tracks.map(t => t.get('trackId')).sort();
   const lastBankId = Math.ceil((tracksId[tracksId.length - 1] / 8) * 8);
 
@@ -51,16 +50,17 @@ export async function setMixerView(activePage, tracks) {
 
 }
 
-export function setFaderView(updates, activePage, tracks) {
-  const trackId = updates.trackId;
+export function setFaderView(trackId, activePage, tracks) {
   const relIndex = (trackId - 1) % 8 + 1;
+  const faderBytes = tracks.map(t => t.get('faderBytes'))[trackId]; // retrieve track value
+  // console.log(faderBytes);
 
   if (relIndex + (activePage * 8) === trackId) {
-    MCU.setFader(`CH${relIndex}`, updates.faderBytes);
+    MCU.setFader(`CH${relIndex}`, faderBytes);
     const displayValue = getValuesFromPage(activePage, tracks.map(t => t.get('faderUser')));
     MCU.setFaderDisplay(displayValue, 'bottom');
-  } else if (track === 'MAIN') {
-    MCU.setFader('MAIN', updates.faderBytes);
+  } else if (trackId === 0) {
+    MCU.setFader('MAIN', faderBytes);
   }
 }
 

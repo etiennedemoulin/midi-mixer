@@ -1163,13 +1163,14 @@ function addDecimal(value, isNeg) {
 // text is an array of x names (x e [0,8]);
 // line can be 'top' or 'bottom'
 function setFaderDisplay(textArray, line) {
-    sysEx = 240;
-    mackieID = [0,0,102];
-    MCU_ID = 20;
-    LCD = 18
-    topLine = 0;
-    botLine = 56;
-    element = [];
+    const sysEx = 240;
+    const mackieID = [0,0,102];
+    const MCU_ID = 20;
+    const LCD = 18
+    const topLine = 0;
+    const botLine = 56;
+    let element = [];
+    let listText = '';
 
     switch (line) {
         case 'top':
@@ -1195,7 +1196,7 @@ function setFaderDisplay(textArray, line) {
         if (typeof textArray[i] === 'string') {
             listText = textArray[i].split('');
         } else if (typeof textArray[i] === 'number') {
-            thisString = textArray[i].toFixed(2).toString();
+            const thisString = textArray[i].toFixed(2).toString();
             listText = thisString.split('')
         }
         for (let i=0;i<7;i++) {
@@ -1397,8 +1398,7 @@ function setFader(fader, value) {
     }
     var payload = [];
     const msb = value >> 7;
-    const lsb = 0;
-    // console.log('@TOFIX!')
+    const lsb = value & 0b00000001111111;
 
     payload = [faderMap[fader], lsb, msb];
     sendMidi(payload);

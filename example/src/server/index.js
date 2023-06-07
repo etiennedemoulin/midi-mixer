@@ -47,7 +47,6 @@ configKeys = configKeys.map(e => parseInt(e));
 
 for (let i = 0; i < (Math.max(...configKeys) + 1); i++) {
   const trackId = configKeys.find(e => (e === i));
-  // console.log(trackId)
   tracks[i] = await server.stateManager.create('track');
 
   if (trackId === undefined) {
@@ -79,7 +78,6 @@ server.stateManager.registerUpdateHook('track', (updates, currentValues, context
     let user = null;
     let raw = null;
     let bytes = null;
-    let linear = null;
 
     if (key === 'faderRaw') {
       user = rawToUser(input, device.fader, currentValues);
@@ -87,24 +85,26 @@ server.stateManager.registerUpdateHook('track', (updates, currentValues, context
       raw = input;
     } else if (key === 'faderUser') {
       raw = userToRaw(input, device.fader, currentValues);
-      bytes = parseInt(input * (Math.pow(2,14) - 1));
+      bytes = parseInt(raw * (Math.pow(2,14) - 1));
       user = input;
     } else if (key === 'faderBytes') {
       raw = input / (Math.pow(2, 14) - 1);
-      user = rawtoUser(raw, device.fader, currentValues);
+      user = rawToUser(raw, device.fader, currentValues);
       bytes = input;
     }
 
-    tracks[id].set({
+    return {
+      ...updates,
       faderUser: user,
       faderBytes: bytes,
       faderRaw : raw,
-    }, { source: 'hook' });
+    };
   }
 });
 
 // Init XT lib
-const midiDevice = "Euphonix MIDI Euphonix Port 1"
+// const midiDevice = "Euphonix MIDI Euphonix Port 1"
+const midiDevice = "mioXM HST 1"
 const port = MCU.getPorts().findIndex(e => e === midiDevice);
 
 if (port !== -1) {
@@ -130,40 +130,13 @@ MCU.setFaderMode('CH7', 'position', 0);
 MCU.setFaderMode('CH8', 'position', 0);
 MCU.setFaderMode('MAIN', 'position', 0);
 
-// const trackCollection = await server.stateManager.getCollection('track');
-// console.log('- trackCollection.length:', trackCollection.length);
-
 tracks.forEach(track => {
   track.onUpdate((newValues, oldValues, context) => {
     if (context.source !== 'midi') {
-      // set fader view -> track, value, page, [list all dB values](for display)
-      console.log("trackCollection onUpdate");
-      // updateFader();
-      // setFaderView(
-      //   state.trackId,
-      //   newValues.faderBytes,
-      //   activePage);
-    }
+      setFaderView(track.get('trackId'), activePage, tracks);
+    };
   });
 });
-
-// trackCollection.onUpdate((state, newValues, oldValues, context) => {
-//   console.log(state, newValues, context);
-
-//   if (context.source !== 'midi') {
-//     // set fader view -> track, value, page, [list all dB values](for display)
-//     console.log("trackCollection onUpdate");
-//     // updateFader();
-//     // setFaderView(
-//     //   state.trackId,
-//     //   newValues.faderBytes,
-//     //   activePage);
-//   }
-// });
-
-// trackCollection.forEach(track => {
-//   console.log(track);
-// });
 
 // update all view
 setMixerView(activePage, tracks);
@@ -172,7 +145,7 @@ MCU.controlMap({
   'button': {
     'down': {
       'FADER BANK RIGHT': function() {
-        const idMap = tracks.get('trackId');
+        const idMap = tracks.map(t => t.get('trackId'));
         const lastFader = idMap[idMap.length - 1];
         if (activePage < Math.floor(lastFader / 8)) {
           activePage++;
@@ -188,9 +161,28 @@ MCU.controlMap({
     },
   },
   'fader': function(name, state) {
-// compute trackID :
-// const absFaderNumber = (index !== -1) ? (index + 1 + page * 8) : 'MAIN';
-// track.set({faderUser: e.detail.value}, {source:'web'})}
+    const relIndex = ['CH1', 'CH2', 'CH3', 'CH4', 'CH5', 'CH6', 'CH7', 'CH8'].findIndex(e => e === name);
+    const absIndex = (relIndex !== -1) ? (relIndex + 1 + activePage * 8) : 0;
+    const track = tracks.find(t => t.get('trackId') === absIndex);
+    let value = null;
+
+    if (typeof state === 'number') {
+      value = state;
+    } else {
+      value = track.get('faderBytes');
+    }
+
+    if (track !== undefined) {
+      track.set({
+        faderBytes: value
+      }, { source: 'midi' });
+    }
+
+    if (state === 'release') {
+      MCU.setFader(name, value);
+    }
+
+
   },
 });
 
