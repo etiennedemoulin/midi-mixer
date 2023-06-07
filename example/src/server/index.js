@@ -36,7 +36,7 @@ await server.start();
 
 // generate schema from midiConfig
 server.stateManager.registerSchema('track', trackSchema);
-let tracks = [];
+const tracks = [];
 
 // replace 'MAIN' key par 0
 midiConfig['0'] = midiConfig['MAIN'];
@@ -49,11 +49,13 @@ for (let i = 0; i < (Math.max(...configKeys) + 1); i++) {
   const trackId = configKeys.find(e => (e === i));
   // console.log(trackId)
   tracks[i] = await server.stateManager.create('track');
+
   if (trackId === undefined) {
     tracks[i].set({ id: i });
   } else {
     const cfg = midiConfig[trackId];
     const range = getFaderRange(cfg);
+
     tracks[i].set(
       {
         id: i,
@@ -67,6 +69,8 @@ for (let i = 0; i < (Math.max(...configKeys) + 1); i++) {
   };
 };
 
+console.log('- numTracks', tracks.length);
+
 server.stateManager.registerUpdateHook('track', (updates, currentValues, context) => {
   if (context.source !== 'hook') {
     const key = Object.keys(updates)[0];
@@ -76,6 +80,7 @@ server.stateManager.registerUpdateHook('track', (updates, currentValues, context
     let raw = null;
     let bytes = null;
     let linear = null;
+
     if (key === 'faderRaw') {
       user = rawToUser(input, device.fader, currentValues);
       bytes = parseInt(input * (Math.pow(2,14) - 1));
@@ -89,8 +94,8 @@ server.stateManager.registerUpdateHook('track', (updates, currentValues, context
       user = rawtoUser(raw, device.fader, currentValues);
       bytes = input;
     }
-    tracks[id].set(
-    {
+
+    tracks[id].set({
       faderUser: user,
       faderBytes: bytes,
       faderRaw : raw,
@@ -109,7 +114,7 @@ if (port !== -1) {
   }, { port: port });
 } else {
   console.log("[midi.mixer] - Cannot find midi device !");
-  throw new Error("Can't find midi device - abort.");
+  // throw new Error("Can't find midi device - abort.");
 }
 
 let activePage = 0;
@@ -125,25 +130,43 @@ MCU.setFaderMode('CH7', 'position', 0);
 MCU.setFaderMode('CH8', 'position', 0);
 MCU.setFaderMode('MAIN', 'position', 0);
 
-const trackCollection = await server.stateManager.getCollection('track');
-trackCollection.onUpdate((state, newValues, oldValues, context) => {
-  if (context.source !== 'midi') {
-    // set fader view -> track, value, page, [list all dB values](for display)
-    console.log("trackCollection onUpdate");
-    // updateFader();
-    // setFaderView(
-    //   state.trackId,
-    //   newValues.faderBytes,
-    //   activePage);
-  }
+// const trackCollection = await server.stateManager.getCollection('track');
+// console.log('- trackCollection.length:', trackCollection.length);
+
+tracks.forEach(track => {
+  track.onUpdate((newValues, oldValues, context) => {
+    if (context.source !== 'midi') {
+      // set fader view -> track, value, page, [list all dB values](for display)
+      console.log("trackCollection onUpdate");
+      // updateFader();
+      // setFaderView(
+      //   state.trackId,
+      //   newValues.faderBytes,
+      //   activePage);
+    }
+  });
 });
 
-trackCollection.forEach(track => {
-  console.log(track);
-})
+// trackCollection.onUpdate((state, newValues, oldValues, context) => {
+//   console.log(state, newValues, context);
+
+//   if (context.source !== 'midi') {
+//     // set fader view -> track, value, page, [list all dB values](for display)
+//     console.log("trackCollection onUpdate");
+//     // updateFader();
+//     // setFaderView(
+//     //   state.trackId,
+//     //   newValues.faderBytes,
+//     //   activePage);
+//   }
+// });
+
+// trackCollection.forEach(track => {
+//   console.log(track);
+// });
 
 // update all view
-setMixerView(activePage, trackCollection);
+setMixerView(activePage, tracks);
 
 MCU.controlMap({
   'button': {
@@ -153,13 +176,13 @@ MCU.controlMap({
         const lastFader = idMap[idMap.length - 1];
         if (activePage < Math.floor(lastFader / 8)) {
           activePage++;
-          setMixerView(activePage, trackCollection);
+          setMixerView(activePage, tracks);
         }
        },
       'FADER BANK LEFT': function() {
         if (activePage > 0) {
           activePage--;
-          setMixerView(activePage, trackCollection);
+          setMixerView(activePage, tracks);
         }
       },
     },
