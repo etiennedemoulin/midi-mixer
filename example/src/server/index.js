@@ -103,8 +103,8 @@ server.stateManager.registerUpdateHook('track', (updates, currentValues, context
 });
 
 // Init XT lib
-// const midiDevice = "Euphonix MIDI Euphonix Port 1"
-const midiDevice = "mioXM HST 1"
+const midiDevice = "Euphonix MIDI Euphonix Port 1"
+// const midiDevice = "mioXM HST 1"
 const port = MCU.getPorts().findIndex(e => e === midiDevice);
 
 if (port !== -1) {
@@ -147,7 +147,7 @@ MCU.controlMap({
       'FADER BANK RIGHT': function() {
         const idMap = tracks.map(t => t.get('trackId'));
         const lastFader = idMap[idMap.length - 1];
-        if (activePage < Math.floor(lastFader / 8)) {
+        if (activePage < (Math.floor(lastFader / 8) - 1)) {
           activePage++;
           setMixerView(activePage, tracks);
         }
@@ -179,9 +179,9 @@ MCU.controlMap({
     }
 
     if (state === 'release') {
-      MCU.setFader(name, value);
+      setFaderView(track.get('trackId'), activePage, tracks);
+      // MCU.setFader(name, value);
     }
-
 
   },
 });

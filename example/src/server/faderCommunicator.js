@@ -20,7 +20,6 @@ function getValuesFromPage(activePage, faderUser) {
         returnArray.push(faderUser[i]);
     }
   };
-
   return returnArray;
 }
 

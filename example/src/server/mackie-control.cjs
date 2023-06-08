@@ -1166,18 +1166,23 @@ function setFaderDisplay(textArray, line) {
     const sysEx = 240;
     const mackieID = [0,0,102];
     const MCU_ID = 20;
-    const LCD = 18
-    const topLine = 0;
-    const botLine = 56;
+    const LCD = 18;
     let element = [];
     let listText = '';
 
+
+    // sanitize textArray
+    textArray = textArray.map(e => (e === null) ? '' : e);
+
+
+    // console.log(textArray)
+
     switch (line) {
         case 'top':
-            element = [sysEx, ...mackieID, MCU_ID, LCD, topLine];
+            element = [240, 0, 0, 102, 20, 18, 0];
             break;
         case 'bottom':
-            element = [sysEx, ...mackieID, MCU_ID, LCD, botLine];
+            element = [240, 0, 0, 102, 20, 18, 56];
             break;
         default:
     }
@@ -1192,6 +1197,7 @@ function setFaderDisplay(textArray, line) {
         textArray = textArray.slice(0,8);
         console.log("attention list will be trimed");
     }
+
     for (i in textArray) {
         if (typeof textArray[i] === 'string') {
             listText = textArray[i].split('');
