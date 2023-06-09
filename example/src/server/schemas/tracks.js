@@ -55,6 +55,7 @@ export const trackSchema = {
   },
   mute: {
     type:'boolean',
-    default:false,
+    default: false,
+    nullable: true,
   },
 };
