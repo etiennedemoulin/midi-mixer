@@ -1,17 +1,21 @@
 import '@soundworks/helpers/polyfills.js';
 import { Server } from '@soundworks/core/server.js';
+import filesystemPlugin from '@soundworks/plugin-filesystem/server.js';
 
 import { loadConfig } from '../utils/load-config.js';
 import '../utils/catch-unhandled-errors.js';
 
+import fs from 'fs';
+
 import { setFaderView, setMixerView, onFaderMove, displayUserFader } from './faderCommunicator.js';
-import { userToRaw, rawToUser, getFaderRange } from './helpers.js';
+import { userToRaw, rawToUser, getFaderRange, parseTrackConfig, initMidiDevice } from './helpers.js';
 import { trackSchema } from './schemas/tracks.js';
 import { globalsSchema } from './schemas/globals.js';
-import * as device from './Controllers/studer.cjs';
 import * as MCU from './mackie-control.cjs';
-import midiConfig from './midiConfig.js';
+// import midiConfig from './midiConfig.js';
+
 import _ from 'lodash';
+import JSON5 from 'json5';
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -31,61 +35,118 @@ console.log(`
  * Initialisation process
  */
 const server = new Server(config);
+const tracks = [];
+
 // configure the server for usage within this application template
 server.useDefaultApplicationTemplate();
+
+server.pluginManager.register('filesystem', filesystemPlugin, {
+  dirname: 'midi-config',
+});
 
 await server.start();
 
 // register tracks
 server.stateManager.registerSchema('track', trackSchema);
-const tracks = [];
-
-// register globals
 server.stateManager.registerSchema('globals', globalsSchema);
+// register globals
 const globals = await server.stateManager.create('globals');
 
-// replace 'MAIN' key par 0 in midiConfig
-if (midiConfig['MAIN'] !== undefined) {
-  midiConfig['0'] = midiConfig['MAIN'];
-  delete midiConfig['MAIN'];
-}
+globals.onUpdate(updates => {
+  if (updates.midiDevice) {
+    const midiDevice = "iConnectMIDI2+ DIN 1";
+    initMidiDevice(midiDevice);
+  }
+}, true);
 
-// generate schema from midiConfig
-const configKeys = Object.keys(midiConfig).map(e => parseInt(e));
+// const midiDevice = "IAC Driver Bus 1"
+// const midiDevice = "D 400";
+const midiDevice = "iConnectMIDI2+ DIN 1";
+initMidiDevice(midiDevice);
 
-for (let i = 0; i < (Math.max(...configKeys) + 1); i++) {
-  // create schema for each fader (from 0 -> last midiConfig key)
-  const trackId = configKeys.find(e => (e === i));
-  tracks[i] = await server.stateManager.create('track');
+// grab config file an init states
+const filesystem = await server.pluginManager.get('filesystem');
+const tree = filesystem.getTree();
+const midiConfigFilename = tree.children.find(f => f.name === 'example-1.json').path;
 
-  if (trackId === undefined) {
-    // track is not in midiConfig
-    tracks[i].set({ id: i });
-  } else {
-    // track is in midiConfig
-    const cfg = midiConfig[trackId];
-    const range = getFaderRange(cfg);
+// update on config file update
+filesystem.onUpdate(async updates => {
+  const midiConfigFilename = tree.children.find(f => f.name === 'example-1.json').path;
+  const midiConfig = JSON5.parse(fs.readFileSync(midiConfigFilename));
 
-    tracks[i].set(
-      {
+  const trackIds = Object.keys(midiConfig)
+    .map(name => name === 'MAIN' ? 0 : parseInt(name))
+    .sort((a, b) => a < b ? -1 : 1);
+
+  const maxTrackIndex = Math.max(...trackIds);
+
+  if (maxTrackIndex + 1 > tracks.length) {
+    console.log(`- create track from ${tracks.length} to ${maxTrackIndex}`);
+  }
+
+  // create states that do not yet exists until maxTrackIndex
+  for (let i = tracks.length; i < maxTrackIndex + 1; i++) {
+    tracks[i] = await server.stateManager.create('track');
+
+    if (!trackIds.includes(i)) {
+      await tracks[i].set({ id: i }, { source: 'config-file' });
+    } else {
+      await tracks[i].set({
         id: i,
-        trackId: trackId,
-        patch: cfg.patch,
-        name: cfg.name,
-        faderType: cfg.type,
-        faderRange: range,
-      }
-    );
-  };
-};
+        trackId: i,
+      }, { source: 'config-file' });
+    }
+  }
 
-console.log('- numTracks', tracks.length);
+  // ncontorllerName
+
+  //  fader, meter -> globals
+
+  // check tracks taht may have been removed
+  tracks.forEach(async track => {
+    const trackId = track.get('trackId');
+
+    // already disabled
+    if (trackId === null) {
+      return;
+    }
+
+    if (!trackIds.includes(trackId)) {
+      console.log('- disable track:', trackId);
+
+      await track.set({
+        trackId: null,
+        patch: null,
+        name: null,
+        faderType: null,
+        faderBytes: null,
+        faderRaw: null,
+        faderUser: null,
+        faderRange: null,
+        mute: null,
+      }, { source: 'config-file' });
+    }
+  });
+
+  // apply updates if any
+  trackIds.forEach(async trackId => {
+    const track = tracks.find(s => s.get('trackId') === trackId);
+    // console.log(trackId, track);
+    const updates = parseTrackConfig(midiConfig[trackId === 0 ? 'MAIN' : `${trackId}`]);
+    await track.set(updates, { source: 'config-file' });
+  });
+
+  // send infos to mixer
+  setMixerView(globals.get('activePage'), tracks);
+
+  console.log('- numTracks:', tracks.length);
+}, true);
 
 // ________________________________
 // hook
 // ________________________________
 
-server.stateManager.registerUpdateHook('track', (updates, currentValues, context) => {
+server.stateManager.registerUpdateHook('track', async (updates, currentValues, context) => {
   // hook compute each fader values
   if (context.source !== 'hook') {
     const key = Object.keys(updates)[0];
@@ -95,17 +156,20 @@ server.stateManager.registerUpdateHook('track', (updates, currentValues, context
     let raw = null;
     let bytes = null;
 
+    const controller = 'studer'; // globals.get('controller');
+    const { fader, meter } = await import(`./controllers/${controller}.js`);
+
     if (key === 'faderRaw') {
-      user = rawToUser(input, device.fader, currentValues);
+      user = rawToUser(input, fader, currentValues);
       bytes = parseInt(input * (Math.pow(2,14) - 1));
       raw = input;
     } else if (key === 'faderUser') {
-      raw = userToRaw(input, device.fader, currentValues);
+      raw = userToRaw(input, fader, currentValues);
       bytes = parseInt(raw * (Math.pow(2,14) - 1));
       user = input;
     } else if (key === 'faderBytes') {
       raw = input / (Math.pow(2, 14) - 1);
-      user = rawToUser(raw, device.fader, currentValues);
+      user = rawToUser(raw, fader, currentValues);
       bytes = input;
     }
 
@@ -117,37 +181,6 @@ server.stateManager.registerUpdateHook('track', (updates, currentValues, context
     };
   }
 });
-
-// ______________________
-// Init MCU lib
-// ______________________
-// const midiDevice = "Euphonix MIDI Euphonix Port 1"
-// const midiDevice = "mioXM HST 1"
-const midiDevice = "iConnectMIDI2+ DIN 1";
-// const midiDevice = "IAC Driver Bus 1"
-// const midiDevice = "D 400";
-const port = MCU.getPorts().findIndex(e => e === midiDevice);
-if (port !== -1) {
-  MCU.start(function(msg) {
-    console.log('Midi Init:', midiDevice);
-  }, { port: port });
-} else {
-  console.log("[midi.mixer] - Cannot find midi device !");
-}
-
-// init fader mode
-MCU.setFaderMode('CH1', 'position', 0);
-MCU.setFaderMode('CH2', 'position', 0);
-MCU.setFaderMode('CH3', 'position', 0);
-MCU.setFaderMode('CH4', 'position', 0);
-MCU.setFaderMode('CH5', 'position', 0);
-MCU.setFaderMode('CH6', 'position', 0);
-MCU.setFaderMode('CH7', 'position', 0);
-MCU.setFaderMode('CH8', 'position', 0);
-MCU.setFaderMode('MAIN', 'position', 0);
-
-// update all view
-setMixerView(globals.get('activePage'), tracks);
 
 // _______________________________
 // updates client side
@@ -163,8 +196,6 @@ tracks.forEach(track => {
 // _______________________
 // updates midi side
 // _______________________
-
-
 MCU.controlMap({
   'button': {
     'down': {

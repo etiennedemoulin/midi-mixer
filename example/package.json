@@ -22,8 +22,9 @@
     "@ircam/simple-components": "^2.4.1",
     "@soundworks/core": "^4.0.0-alpha.0",
     "@soundworks/helpers": "^1.0.0-alpha.2",
+    "@soundworks/plugin-filesystem": "^2.0.0-alpha.1",
     "@soundworks/plugin-platform-init": "^1.0.0-alpha.2",
-    "json5": "^2.2.2",
+    "json5": "^2.2.3",
     "jw-xtouch": "^1.0.1",
     "lit": "^2.2.2",
     "lodash": "^4.17.21"

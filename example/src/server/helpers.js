@@ -1,3 +1,5 @@
+import * as MCU from './mackie-control.cjs';
+
 function dBtoRaw(dB, transfertTable) {
   const nearestdB = transfertTable.reduce((a, b) => {
     return Math.abs(b - dB) < Math.abs(a - dB) ? b : a;
@@ -68,4 +70,39 @@ export function getFaderRange(config) {
   } else {
     throw new Error("Can't parse fader range");
   }
+}
+
+
+export function parseTrackConfig(config) {
+  const range = getFaderRange(config);
+
+  return {
+    patch: config.patch,
+    name: config.name,
+    faderType: config.type,
+    faderRange: range,
+  };
+}
+
+export function initMidiDevice(midiDevice) {
+  const port = MCU.getPorts().findIndex(e => e === midiDevice);
+
+  if (port !== -1) {
+    MCU.start(msg => {
+      console.log('Midi Init:', midiDevice);
+    }, { port: port });
+  } else {
+    console.log("[midi.mixer] - Cannot find midi device !");
+  }
+
+  // init fader mode
+  MCU.setFaderMode('CH1', 'position', 0);
+  MCU.setFaderMode('CH2', 'position', 0);
+  MCU.setFaderMode('CH3', 'position', 0);
+  MCU.setFaderMode('CH4', 'position', 0);
+  MCU.setFaderMode('CH5', 'position', 0);
+  MCU.setFaderMode('CH6', 'position', 0);
+  MCU.setFaderMode('CH7', 'position', 0);
+  MCU.setFaderMode('CH8', 'position', 0);
+  MCU.setFaderMode('MAIN', 'position', 0);
 }
