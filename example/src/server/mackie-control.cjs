@@ -1493,6 +1493,7 @@ function setFaderMode(fader, mode, resolution, release) {
 function setFaderRelease(fader, release) {
     try {
         faderModes[fader].release = release;
+
     } catch (e) {
         emit('error', 'setFaderRelease: ' + e);
     }

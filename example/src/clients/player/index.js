@@ -45,7 +45,7 @@ function renderEmptyTrack(num) {
 
 
 function renderTrack(track) {
-  const _setTrack = _.throttle(track.set, 1000, { 'trailing': true });
+  const _setTrack = _.throttle((...args) => track.set(...args), 1000, { 'trailing': true });
   const component = {
     render: () => {
       const debug = `trackId = ${track.get('trackId')} // swID = ${track.get('id')} // patch = ${track.get('patch')} // name = ${track.get('name')} // ${track.get('faderType')}`;
@@ -59,7 +59,7 @@ function renderTrack(track) {
         min=${track.getSchema().faderRaw.min}
         max=${track.getSchema().faderRaw.max}
         value=${track.get('faderRaw')}
-        @input=${e => track.set({
+        @input=${e => _setTrack({
           faderRaw: e.detail.value
         }, {
           source: 'web'
@@ -70,11 +70,11 @@ function renderTrack(track) {
         min=${track.get('faderRange')[1][0]}
         max=${track.get('faderRange')[1][1]}
         value=${track.get('faderUser')}
-        @input=${e => track.set({faderUser: e.detail.value}, {source:'web'})}
+        @input=${e => _setTrack({faderUser: e.detail.value}, {source:'web'})}
       ></sc-number>
       <sc-toggle
         ?active=${track.get('mute')}
-        @change=${e => track.set({mute: e.detail.value}, {source:'web'})}
+        @change=${e => _setTrack({mute: e.detail.value}, {source:'web'})}
       ></sc-toggle>
       </br>
   `;

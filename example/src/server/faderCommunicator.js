@@ -50,6 +50,7 @@ export async function setMixerView(activePage, tracks) {
 }
 
 export function setFaderView(trackId, activePage, tracks) {
+  // @todo send 'release' message when no moves
   const relIndex = (trackId - 1) % 8 + 1;
   const faderBytes = tracks.map(t => t.get('faderBytes'))[trackId]; // retrieve track value
 
