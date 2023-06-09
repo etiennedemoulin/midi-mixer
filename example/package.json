@@ -25,7 +25,8 @@
     "@soundworks/plugin-platform-init": "^1.0.0-alpha.2",
     "json5": "^2.2.2",
     "jw-xtouch": "^1.0.1",
-    "lit": "^2.2.2"
+    "lit": "^2.2.2",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@ircam/eslint-config": "^1.3.0",

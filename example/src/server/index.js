@@ -4,12 +4,14 @@ import { Server } from '@soundworks/core/server.js';
 import { loadConfig } from '../utils/load-config.js';
 import '../utils/catch-unhandled-errors.js';
 
-import { setFaderView, setMixerView } from './faderCommunicator.js';
+import { setFaderView, setMixerView, onFaderMove, displayUserFader } from './faderCommunicator.js';
 import { userToRaw, rawToUser, getFaderRange } from './helpers.js';
 import { trackSchema } from './schemas/tracks.js';
+import { globalsSchema } from './schemas/globals.js';
 import * as device from './Controllers/studer.cjs';
 import * as MCU from './mackie-control.cjs';
 import midiConfig from './midiConfig.js';
+import _ from 'lodash';
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -26,7 +28,7 @@ console.log(`
 `);
 
 /**
- * Create the soundworks server
+ * Initialisation process
  */
 const server = new Server(config);
 // configure the server for usage within this application template
@@ -34,24 +36,33 @@ server.useDefaultApplicationTemplate();
 
 await server.start();
 
-// generate schema from midiConfig
+// register tracks
 server.stateManager.registerSchema('track', trackSchema);
 const tracks = [];
 
-// replace 'MAIN' key par 0
-midiConfig['0'] = midiConfig['MAIN'];
-delete midiConfig['MAIN'];
+// register globals
+server.stateManager.registerSchema('globals', globalsSchema);
+const globals = await server.stateManager.create('globals');
 
-let configKeys = Object.keys(midiConfig);
-configKeys = configKeys.map(e => parseInt(e));
+// replace 'MAIN' key par 0 in midiConfig
+if (midiConfig['MAIN'] !== undefined) {
+  midiConfig['0'] = midiConfig['MAIN'];
+  delete midiConfig['MAIN'];
+}
+
+// generate schema from midiConfig
+const configKeys = Object.keys(midiConfig).map(e => parseInt(e));
 
 for (let i = 0; i < (Math.max(...configKeys) + 1); i++) {
+  // create schema for each fader (from 0 -> last midiConfig key)
   const trackId = configKeys.find(e => (e === i));
   tracks[i] = await server.stateManager.create('track');
 
   if (trackId === undefined) {
+    // track is not in midiConfig
     tracks[i].set({ id: i });
   } else {
+    // track is in midiConfig
     const cfg = midiConfig[trackId];
     const range = getFaderRange(cfg);
 
@@ -70,7 +81,12 @@ for (let i = 0; i < (Math.max(...configKeys) + 1); i++) {
 
 console.log('- numTracks', tracks.length);
 
+// ________________________________
+// hook
+// ________________________________
+
 server.stateManager.registerUpdateHook('track', (updates, currentValues, context) => {
+  // hook compute each fader values
   if (context.source !== 'hook') {
     const key = Object.keys(updates)[0];
     const input = updates[key];
@@ -102,22 +118,22 @@ server.stateManager.registerUpdateHook('track', (updates, currentValues, context
   }
 });
 
-// Init XT lib
-const midiDevice = "Euphonix MIDI Euphonix Port 1"
+// ______________________
+// Init MCU lib
+// ______________________
+// const midiDevice = "Euphonix MIDI Euphonix Port 1"
 // const midiDevice = "mioXM HST 1"
+const midiDevice = "iConnectMIDI2+ DIN 1";
+// const midiDevice = "IAC Driver Bus 1"
+// const midiDevice = "D 400";
 const port = MCU.getPorts().findIndex(e => e === midiDevice);
-
 if (port !== -1) {
   MCU.start(function(msg) {
     console.log('Midi Init:', midiDevice);
-    // console.log('Midi Init: ' + msg);
   }, { port: port });
 } else {
   console.log("[midi.mixer] - Cannot find midi device !");
-  // throw new Error("Can't find midi device - abort.");
 }
-
-let activePage = 0;
 
 // init fader mode
 MCU.setFaderMode('CH1', 'position', 0);
@@ -130,16 +146,24 @@ MCU.setFaderMode('CH7', 'position', 0);
 MCU.setFaderMode('CH8', 'position', 0);
 MCU.setFaderMode('MAIN', 'position', 0);
 
+// update all view
+setMixerView(globals.get('activePage'), tracks);
+
+// _______________________________
+// updates client side
+// _______________________________
 tracks.forEach(track => {
   track.onUpdate((newValues, oldValues, context) => {
     if (context.source !== 'midi') {
-      setFaderView(track.get('trackId'), activePage, tracks);
+      setFaderView(track.get('trackId'), globals.get('activePage'), tracks);
     };
   });
 });
 
-// update all view
-setMixerView(activePage, tracks);
+// _______________________
+// updates midi side
+// _______________________
+
 
 MCU.controlMap({
   'button': {
@@ -147,45 +171,32 @@ MCU.controlMap({
       'FADER BANK RIGHT': function() {
         const idMap = tracks.map(t => t.get('trackId'));
         const lastFader = idMap[idMap.length - 1];
-        if (activePage < (Math.floor(lastFader / 8) - 1)) {
-          activePage++;
-          setMixerView(activePage, tracks);
+        const activePage = globals.get('activePage');
+        const lastPage = Math.floor((lastFader - 1) / 8);
+        if (activePage < lastPage) {
+          globals.set({ activePage: activePage + 1 });
+          setMixerView(globals.get('activePage'), tracks);
         }
        },
       'FADER BANK LEFT': function() {
+        const activePage = globals.get('activePage');
         if (activePage > 0) {
-          activePage--;
-          setMixerView(activePage, tracks);
+          globals.set({ activePage: activePage - 1 });
+          setMixerView(globals.get('activePage'), tracks);
         }
       },
     },
   },
   'fader': function(name, state) {
-    const relIndex = ['CH1', 'CH2', 'CH3', 'CH4', 'CH5', 'CH6', 'CH7', 'CH8'].findIndex(e => e === name);
-    const absIndex = (relIndex !== -1) ? (relIndex + 1 + activePage * 8) : 0;
-    const track = tracks.find(t => t.get('trackId') === absIndex);
-    let value = null;
-
-    if (typeof state === 'number') {
-      value = state;
-    } else {
-      value = track.get('faderBytes');
-    }
-
-    if (track !== undefined) {
-      track.set({
-        faderBytes: value
-      }, { source: 'midi' });
-    }
-
-    if (state === 'release') {
-      setFaderView(track.get('trackId'), activePage, tracks);
-      // MCU.setFader(name, value);
-    }
-
+    onFaderMove(name, state, globals.get('activePage'), tracks);
+    displayUserFader(globals.get('activePage'), tracks);
   },
 });
 
 MCU.on('debug', (e) => {
   // console.log(e);
 });
+
+// @TODO
+// send ping every seconds
+

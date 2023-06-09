@@ -970,10 +970,16 @@ function getRotation(state) {
 }
 
 midiIn.on('message', function(d, message) {
-	debug('Midi Received: ' + message);
+
 	var type = message[0];
 	var value = message[1];
     var state = message[2];
+    let hexStr = '';
+    message.forEach(e => {
+        hexStr += e.toString(16);
+        hexStr += ' ';
+    })
+	debug('Midi Received: ' + hexStr);
 
     var response = {};
     

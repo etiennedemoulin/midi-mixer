@@ -6,6 +6,7 @@ import '@ircam/simple-components/sc-slider.js';
 import '@ircam/simple-components/sc-text.js';
 import '@ircam/simple-components/sc-toggle.js';
 import '@ircam/simple-components/sc-number.js';
+import _ from 'lodash';
 
 import createLayout from './views/layout.js';
 
@@ -42,7 +43,9 @@ function renderEmptyTrack(num) {
   return component;
 }
 
+
 function renderTrack(track) {
+  const _setTrack = _.throttle(track.set, 1000, { 'trailing': true });
   const component = {
     render: () => {
       const debug = `trackId = ${track.get('trackId')} // swID = ${track.get('id')} // patch = ${track.get('patch')} // name = ${track.get('name')} // ${track.get('faderType')}`;
