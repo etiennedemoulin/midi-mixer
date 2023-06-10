@@ -45,7 +45,7 @@ function renderEmptyTrack(num) {
 
 
 function renderTrack(track) {
-  const _setTrack = _.throttle((...args) => track.set(...args), 1000, { 'trailing': true });
+  const _setTrack = _.throttle((...args) => track.set(...args), 50, { 'trailing': true });
   const component = {
     render: () => {
       const debug = `trackId = ${track.get('trackId')} // swID = ${track.get('id')} // patch = ${track.get('patch')} // name = ${track.get('name')} // ${track.get('faderType')}`;
@@ -92,7 +92,7 @@ function renderParams(globals) {
         readonly
       ></sc-text>
       <select
-        @change=${e => globals.set({midiDeviceSelected: e.target.value})}
+        @change=${e => globals.set({midiDeviceSelected: e.target.value}, {source:'web'})}
       >
         ${globals.get('midiDeviceList').map(name => {
           return html`<option value="${name}" ?selected="${name === globals.get('midiDeviceSelected')}">${name}</option>`;
@@ -103,7 +103,7 @@ function renderParams(globals) {
         readonly
       ></sc-text>
       <select
-        @change=${e => console.log(e.target.value)}
+        @change=${e => globals.set({selectedController: e.target.value}, {source: 'web'})}
       >
         ${globals.get('controllerList').map(name => {
           return html`<option value="${name}" ?selected="${name === globals.get('selectedController')}">${name}</option>`;

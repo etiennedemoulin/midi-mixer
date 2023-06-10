@@ -12,19 +12,22 @@ export const globalsSchema = {
   },
   midiDeviceList: {
     type: 'any',
-    default: [],
+    default: null,
+    nullable: true,
   },
   selectedController: {
     type: 'string',
     default: null,
     nullable: true,
   },
-  controllerFaderValues: {
+  selectedControllerFaderValues: {
     type: 'any',
-    default: [],
+    default: null, 
+    nullable: true,
   },
   controllerList: {
     type: 'any',
-    default: [],
+    default: null,
+    nullable: true,
   },
 };

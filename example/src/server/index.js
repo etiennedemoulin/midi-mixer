@@ -52,25 +52,34 @@ server.stateManager.registerSchema('globals', globalsSchema);
 // register globals
 const globals = await server.stateManager.create('globals');
 
-globals.onUpdate(async updates => {
-  const midiDeviceList = getMidiDeviceList();
-  globals.set({ midiDeviceList: midiDeviceList });
+globals.onUpdate(async(updates) => {
+  if (updates.controllerList === null) {
+    const controllerList = getControllerList();
+    await globals.set({ controllerList: controllerList });
+  }
+  if (updates.midiDeviceList === null) {
+    const midiDeviceList = getMidiDeviceList();
+    await globals.set({ midiDeviceList: midiDeviceList });
+  }
+  if (updates.selectedController === null) {
+    const controllerList = globals.get('controllerList');
+    await globals.set({selectedController: controllerList[0]});
+  }
+  if (updates.midiDeviceSelected === null) {
+    const midiDeviceList = globals.get('midiDeviceList');
+    await globals.set({midiDeviceSelected: midiDeviceList[0]});
+  }
+}, true)
 
+server.stateManager.registerUpdateHook('globals', async(updates) => {
   if (updates.midiDeviceSelected) {
     const midiDevice = globals.get('midiDeviceSelected');
     initMidiDevice(midiDevice);
   }
-
-  const controllerList = await getControllerList();
-  globals.set({ controllerList: controllerList });
-
-}, true);
-
-server.stateManager.registerUpdateHook('globals', async(updates) => {
   if (updates.selectedController) {
-    const { fader, meter } = await import(`./controllers/${controller}.js`);
-    globals.set({ controllerFaderValues: fader });
-  }
+    const { fader } = await import (`./controllers/${updates.selectedController}.js`);
+    await globals.set({selectedControllerFaderValues: fader});
+  };
 }, true);
 
 // grab config file an init states
@@ -161,7 +170,7 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
     let raw = null;
     let bytes = null;
 
-    const controller = globals.get('selectedController');
+    const fader = await globals.get('selectedControllerFaderValues');
 
     if (key === 'faderRaw') {
       user = rawToUser(input, fader, currentValues);
@@ -209,14 +218,14 @@ MCU.controlMap({
         const activePage = globals.get('activePage');
         const lastPage = Math.floor((lastFader - 1) / 8);
         if (activePage < lastPage) {
-          globals.set({ activePage: activePage + 1 });
+          globals.set({ activePage: activePage + 1 }, {source:'midi'});
           setMixerView(globals.get('activePage'), tracks);
         }
        },
       'FADER BANK LEFT': function() {
         const activePage = globals.get('activePage');
         if (activePage > 0) {
-          globals.set({ activePage: activePage - 1 });
+          globals.set({ activePage: activePage - 1 }, {source: 'midi'});
           setMixerView(globals.get('activePage'), tracks);
         }
       },

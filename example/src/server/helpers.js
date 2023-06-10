@@ -12,7 +12,7 @@ function dBtoRaw(dB, transfertTable) {
 
 function rawtodB(raw, transfertTable) {
   const index = parseInt(raw * (transfertTable.length - 1));
-  const dB = transfertTable[index];
+  const dB = Math.round(transfertTable[index] * 100) / 100;
   return dB;
 }
 
@@ -20,7 +20,7 @@ function rawtoLin(raw, range) {
   const sens = (range[1] > range[0]) ? 1 : -1;
   const amplitude = Math.abs(range[1] - range[0]);
   const lin = range[0] + sens * (raw * amplitude);
-  return lin;
+  return (Math.round(lin * 100) / 100);
 }
 
 function linToRaw(lin, range) {
@@ -116,14 +116,11 @@ export function getMidiDeviceList() {
   return ports;
 }
 
-export async function getControllerList() {
-  const directoryPath = path.join(process.cwd(), './src/server/controllers');
+export function getControllerList() {
+  const controllersFolder = fs.readdirSync(path.resolve(process.cwd(),'./src/server/controllers'));
   const controllers = [];
-  fs.readdir(directoryPath, function (err, files) {
-    //handling error
-    if (err) {
-        return console.log('Unable to scan directory: ' + err);
-    }
-    return files;
+  controllersFolder.forEach(e => {
+    controllers.push(e.split('.').shift());
   });
+  return controllers;
 }
