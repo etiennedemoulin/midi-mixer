@@ -77,7 +77,39 @@ function renderTrack(track) {
         @change=${e => _setTrack({mute: e.detail.value}, {source:'web'})}
       ></sc-toggle>
       </br>
-  `;
+      `;
+    }
+  };
+  return component;
+}
+
+function renderParams(globals) {
+  const component = {
+    render: () => {
+      return html`
+      <sc-text
+        value="midi device"
+        readonly
+      ></sc-text>
+      <select
+        @change=${e => globals.set({midiDeviceSelected: e.target.value})}
+      >
+        ${globals.get('midiDeviceList').map(name => {
+          return html`<option value="${name}" ?selected="${name === globals.get('midiDeviceSelected')}">${name}</option>`;
+        })}
+      </select>
+      <sc-text
+        value="controller"
+        readonly
+      ></sc-text>
+      <select
+        @change=${e => console.log(e.target.value)}
+      >
+        ${globals.get('controllerList').map(name => {
+          return html`<option value="${name}" ?selected="${name === globals.get('selectedController')}">${name}</option>`;
+        })}
+      </select>
+      `;
     }
   };
   return component;
@@ -97,11 +129,13 @@ async function main($container) {
   await client.start();
 
   const tracks = await client.stateManager.getCollection('track');
+  const globals = await client.stateManager.attach('globals');
 
   const $layout = createLayout(client, $container);
 
   tracks.onUpdate(() => $layout.requestUpdate());
   let component = [];
+  component.push(renderParams(globals));
 
   tracks.forEach(track => {
     if (track.get('trackId') !== null) {

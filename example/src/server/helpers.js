@@ -1,4 +1,6 @@
 import * as MCU from './mackie-control.cjs';
+import path from 'path';
+import fs from 'fs';
 
 function dBtoRaw(dB, transfertTable) {
   const nearestdB = transfertTable.reduce((a, b) => {
@@ -85,6 +87,7 @@ export function parseTrackConfig(config) {
 }
 
 export function initMidiDevice(midiDevice) {
+  MCU.stop();
   const port = MCU.getPorts().findIndex(e => e === midiDevice);
 
   if (port !== -1) {
@@ -105,4 +108,22 @@ export function initMidiDevice(midiDevice) {
   MCU.setFaderMode('CH7', 'position', 0);
   MCU.setFaderMode('CH8', 'position', 0);
   MCU.setFaderMode('MAIN', 'position', 0);
+}
+
+
+export function getMidiDeviceList() {
+  const ports = MCU.getPorts();
+  return ports;
+}
+
+export async function getControllerList() {
+  const directoryPath = path.join(process.cwd(), './src/server/controllers');
+  const controllers = [];
+  fs.readdir(directoryPath, function (err, files) {
+    //handling error
+    if (err) {
+        return console.log('Unable to scan directory: ' + err);
+    }
+    return files;
+  });
 }

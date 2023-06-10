@@ -8,7 +8,7 @@ import '../utils/catch-unhandled-errors.js';
 import fs from 'fs';
 
 import { setFaderView, setMixerView, onFaderMove, displayUserFader } from './faderCommunicator.js';
-import { userToRaw, rawToUser, getFaderRange, parseTrackConfig, initMidiDevice } from './helpers.js';
+import { userToRaw, rawToUser, getFaderRange, parseTrackConfig, initMidiDevice, getMidiDeviceList, getControllerList } from './helpers.js';
 import { trackSchema } from './schemas/tracks.js';
 import { globalsSchema } from './schemas/globals.js';
 import * as MCU from './mackie-control.cjs';
@@ -52,17 +52,26 @@ server.stateManager.registerSchema('globals', globalsSchema);
 // register globals
 const globals = await server.stateManager.create('globals');
 
-globals.onUpdate(updates => {
-  if (updates.midiDevice) {
-    const midiDevice = "iConnectMIDI2+ DIN 1";
+globals.onUpdate(async updates => {
+  const midiDeviceList = getMidiDeviceList();
+  globals.set({ midiDeviceList: midiDeviceList });
+
+  if (updates.midiDeviceSelected) {
+    const midiDevice = globals.get('midiDeviceSelected');
     initMidiDevice(midiDevice);
   }
+
+  const controllerList = await getControllerList();
+  globals.set({ controllerList: controllerList });
+
 }, true);
 
-// const midiDevice = "IAC Driver Bus 1"
-// const midiDevice = "D 400";
-const midiDevice = "iConnectMIDI2+ DIN 1";
-initMidiDevice(midiDevice);
+server.stateManager.registerUpdateHook('globals', async(updates) => {
+  if (updates.selectedController) {
+    const { fader, meter } = await import(`./controllers/${controller}.js`);
+    globals.set({ controllerFaderValues: fader });
+  }
+}, true);
 
 // grab config file an init states
 const filesystem = await server.pluginManager.get('filesystem');
@@ -97,10 +106,6 @@ filesystem.onUpdate(async updates => {
       }, { source: 'config-file' });
     }
   }
-
-  // ncontorllerName
-
-  //  fader, meter -> globals
 
   // check tracks taht may have been removed
   tracks.forEach(async track => {
@@ -156,8 +161,7 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
     let raw = null;
     let bytes = null;
 
-    const controller = 'studer'; // globals.get('controller');
-    const { fader, meter } = await import(`./controllers/${controller}.js`);
+    const controller = globals.get('selectedController');
 
     if (key === 'faderRaw') {
       user = rawToUser(input, fader, currentValues);
