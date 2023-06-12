@@ -14,6 +14,8 @@ import { globalsSchema } from './schemas/globals.js';
 import * as MCU from './mackie-control.cjs';
 // import midiConfig from './midiConfig.js';
 
+import osc from 'osc';
+
 import _ from 'lodash';
 import JSON5 from 'json5';
 
@@ -46,6 +48,16 @@ server.pluginManager.register('filesystem', filesystemPlugin, {
 
 await server.start();
 
+// Create an osc.js UDP Port listening on port 57121.
+const udpPort = new osc.UDPPort({
+    localAddress: "0.0.0.0",
+    localPort: 3333,
+    metadata: true
+});
+
+// Open the socket.
+udpPort.open();
+
 // register tracks
 server.stateManager.registerSchema('track', trackSchema);
 server.stateManager.registerSchema('globals', globalsSchema);
@@ -56,31 +68,33 @@ globals.onUpdate(async(updates) => {
   if (updates.controllerList === null) {
     const controllerList = getControllerList();
     await globals.set({ controllerList: controllerList });
-  }
-  if (updates.midiDeviceList === null) {
-    const midiDeviceList = getMidiDeviceList();
-    await globals.set({ midiDeviceList: midiDeviceList });
-  }
+  };
   if (updates.selectedController === null) {
     const controllerList = globals.get('controllerList');
     await globals.set({selectedController: controllerList[0]});
-  }
+  };
+  if (updates.midiDeviceList === null) {
+    const midiDeviceList = getMidiDeviceList();
+    await globals.set({ midiDeviceList: midiDeviceList });
+  };
   if (updates.midiDeviceSelected === null) {
     const midiDeviceList = globals.get('midiDeviceList');
     await globals.set({midiDeviceSelected: midiDeviceList[0]});
-  }
+  };
 }, true)
 
 server.stateManager.registerUpdateHook('globals', async(updates) => {
-  if (updates.midiDeviceSelected) {
-    const midiDevice = globals.get('midiDeviceSelected');
-    initMidiDevice(midiDevice);
-  }
   if (updates.selectedController) {
     const { fader } = await import (`./controllers/${updates.selectedController}.js`);
     await globals.set({selectedControllerFaderValues: fader});
   };
-}, true);
+  if (updates.midiDeviceSelected) {
+    const midiDevice = await globals.get('midiDeviceSelected');
+    if (midiDevice !== null) {
+      initMidiDevice(midiDevice);
+    }
+  }
+});
 
 // grab config file an init states
 const filesystem = await server.pluginManager.get('filesystem');
@@ -105,6 +119,10 @@ filesystem.onUpdate(async updates => {
   // create states that do not yet exists until maxTrackIndex
   for (let i = tracks.length; i < maxTrackIndex + 1; i++) {
     tracks[i] = await server.stateManager.create('track');
+    // listening for incoming soundworks changes
+    tracks[i].onUpdate((newValues, oldValues, context) => {
+      onTrackUpdate(newValues, oldValues, context, tracks[i]);
+    });
 
     if (!trackIds.includes(i)) {
       await tracks[i].set({ id: i }, { source: 'config-file' });
@@ -196,18 +214,71 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
 });
 
 // _______________________________
-// updates client side
+// listening for incoming soundworks updates
 // _______________________________
-tracks.forEach(track => {
-  track.onUpdate((newValues, oldValues, context) => {
-    if (context.source !== 'midi') {
-      setFaderView(track.get('trackId'), globals.get('activePage'), tracks);
+function onTrackUpdate(newValues, oldValues, context, track) {
+  if (context.source !== 'midi') {
+    setFaderView(track.get('trackId'), globals.get('activePage'), tracks);
+  }
+  if (context.source !== 'osc') {
+    udpPort.send({
+        timeTag: osc.timeTag(0),
+        packets: [
+            {
+                address: `/track/${track.get('trackId')}/fader/user`,
+                args: [
+                    {
+                        type: "f",
+                        value: track.get('faderUser')
+                    }
+                ]
+            },
+            {
+                address: `/track/${track.get('trackId')}/fader/raw`,
+                args: [
+                    {
+                        type: "f",
+                        value: track.get('faderRaw')
+                    }
+                ]
+            },
+            {
+                address: `/track/${track.get('trackId')}/fader/bytes`,
+                args: [
+                    {
+                        type: "f",
+                        value: track.get('faderBytes')
+                    }
+                ]
+            },            
+        ]
+    }, "127.0.0.1", 3334);
+  }
+}
+
+// Listen for incoming OSC messages.
+udpPort.on("message", function (oscMsg, timeTag, info) {
+  oscMsg.args.forEach(msg => {
+    const address = oscMsg.address.split('/');
+    address.shift();
+    const value = parseFloat(msg.value);
+    const channel = parseInt(address[1]);
+    const track = tracks.find(t => t.get('trackId') === channel);
+    const header = address[0];
+    if (header === 'track' && track !== undefined) {
+      if (address[2] === 'fader' && address[3] === 'user') {
+        track.set({ faderUser: value }, {source: 'osc'});
+      } else if (address[2] === 'fader' && address[3] === 'raw') {
+        track.set({ faderRaw: value }, {source: 'osc'});
+      } else if (address[2] === 'fader' && address[3] === 'bytes') {
+        track.set({ faderBytes: value}, {source: 'osc'});
+      };
     };
   });
 });
 
 // _______________________
-// updates midi side
+// listening for updates on midi side
 // _______________________
 MCU.controlMap({
   'button': {
@@ -240,7 +311,3 @@ MCU.controlMap({
 MCU.on('debug', (e) => {
   // console.log(e);
 });
-
-// @TODO
-// send ping every seconds
-
