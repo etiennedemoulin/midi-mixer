@@ -3,13 +3,89 @@ const path = require('path');
 const open = require('open');
 const JSON5 = require('json5');
 const Max = require('max-api');
-const MCU = require('node-mcu');
+const { Client, Server } = require('node-osc');
 
 let configFilename = null;
 let cwd = null;
 let patchPath = null;
 let boxesDictName = null;
+let patchIndex = null;
 
+Max.addHandlers({
+  [Max.MESSAGE_TYPES.ALL]: (handled, ...args) => onMessage(...args),
+  edit: (filename) => open(configFilename),
+  getPorts: () => _getPorts(),
+  getDevices: () => _getDevices(),
+  init: (name, patchPath, patchIndex, midiDevice, controller) => init(name, patchPath, patchIndex, midiDevice, controller),
+});
+
+// ____OSC
+
+const server = new Server(3334, '0.0.0.0');
+
+// server.on('listening', () => {
+//   console.log('OSC Server is listening.');
+// })
+
+server.on('bundle', async (msg) => {
+  msg.elements.forEach(async (e) => {
+    const address = e[0].split('/');
+    address.shift();
+    const trackFlag = address[0];
+    const trackNumber = 'midi-'+address[1];
+    const faderFlag = address[2];
+    const dataType = address[3];
+    const value = parseFloat(e[1]);
+
+    if (trackFlag === 'track' && faderFlag === 'fader') {
+      // this is a fader
+      if (dataType === 'user') {
+        // propagating user value
+        await Max.setDict('midiMaxDict', {patch:trackNumber, value:value});
+        await Max.outlet('update bang');
+      }
+    }
+    // Max.outlet(e);
+  });
+});
+
+// ____OSC
+
+async function onMessage(...args) {
+  // if (globals.state === null) {
+  //   return;
+  // }
+
+  const handledMessages = ['edit', 'getPorts', 'getDevices', 'init'];
+
+  const cmd = args[0];
+
+  if (handledMessages.includes(cmd)) {
+    return;
+  }
+
+  try {
+    // @note - we must accept a list, because array are translated to lists by max
+    const key = args.shift();
+
+    const value = args[0];
+
+    try {
+      const trackId = key.split('-')[1];
+      const client = new Client('127.0.0.1', 3333);
+      client.send(`/track/${trackId}/fader/user`, value, () => {
+        client.close();
+      });
+
+      // await globals.state.set({ [key]: value });
+    } catch(err) {
+      console.log(err.message);
+    }
+  } catch(err) {
+    console.error(err.message);
+  }
+
+}
 function generateBox(varName, boxName, args, position, presentation, comment) {
   existingBoxes.list.push(varName);
 
@@ -28,57 +104,33 @@ function generateLink(varNameOut, outlet, varNameIn, inlet) {
 }
 
 // Init when Max is ready
-Max.addHandler('init', (name, patchPath, patchIndex, midiDevice, controller) => {
-    if (patchPath === '') {
-      cwd = process.cwd();
-    } else {
-      const parts = patchPath.split('/');
-      const cleaned = parts.slice(3);
-      cleaned.pop();
-      cwd = `/${cleaned.join('/')}`;
-  }
-
-  boxesDictName = `${patchIndex}_midi-mixer_existing_boxes`;
-
-  // Init MCU lib
-  const port = MCU.getPorts().findIndex( (e) => e === midiDevice );
-  if (port !== -1) {
-    MCU.start(function(msg) {
-      console.log('Midi Init:', midiDevice);
-    },{port:port});
+function init(name, patchPath, patchIndex, midiDevice, controller) {
+  patchIndex = patchIndex;
+  if (patchPath === '') {
+    cwd = process.cwd();
   } else {
-    console.log("[midi.mixer] - Cannot find midi device !");
+    const parts = patchPath.split('/');
+    const cleaned = parts.slice(3);
+    cleaned.pop();
+    cwd = `/${cleaned.join('/')}`;
   }
-
-  // set fader lib
-  try {
-    device = require(`../Controllers/${controller}.js`);
-    console.log(`[midi.mixer] - Using the ${controller} midi mapping`);
-  } catch {
-    console.log(`[midi.mixer] - Can't find the ${controller} midi mapping`);
-    throw new Error("Can't find this midicontroller mapping");
-  }
-
+  boxesDictName = `${patchIndex}_midi-mixer_existing_boxes`;
   readConfig(name);
+};
 
-});
 
-Max.addHandler('edit', (filename) => {
-  open(configFilename);
-});
-
-Max.addHandler('getPorts', () => {
+function _getPorts() {
   XT.getPorts().forEach((e,i) => {
-    console.log(`[midi.mixer] - #${i}: ${e}`);
+    Max.post(`[midi.mixer] - #${i}: ${e}`);
   });
-});
+}
 
-Max.addHandler('getDevices', () => {
+function _getDevices() {
   const controllers = fs.readdirSync('../Controllers');
   controllers.forEach(e => {
     console.log(`${e.split('.').shift()}`);
   });
-});
+};
 
 // Read configuration file midi.json
 function readConfig(name) {
@@ -128,11 +180,14 @@ async function createPatch(config) {
   for (i in config) {
     const patch = config[i].patch;
     generateBox(`receive-${patch}`, "receive", [`${patch}`], { x: 600+pos, y: 400 }, 0);
-    generateBox(`prepend-${patch}`, "prepend", [`${patch}`], { x: 600+pos, y: 430 }, 0);
-    generateBox(`speedlim-${patch}`, "speedlim", [100], { x: 600+pos, y: 460 }, 0);
-    generateLink(`receive-${patch}`, 0, `prepend-${patch}`, 0);
-    generateLink(`prepend-${patch}`, 0, `speedlim-${patch}`, 0);
-    generateLink(`speedlim-${patch}`, 0, "toNode", 0);
+    generateBox(`set-${patch}`, "prepend", ['set'], { x: 600+pos, y: 430 }, 0);
+    generateBox(`numbox-${patch}`, "flonum", [''], { x: 600+pos, y: 460 }, 0);
+    generateBox(`prepend-${patch}`, "prepend", [`${patch}`], { x: 600+pos, y: 490 }, 0);
+    generateBox(`send-${patch}`, "send", [`#0_node`], { x: 600+pos, y: 520 }, 0);
+    generateLink(`receive-${patch}`, 0, `set-${patch}`, 0);
+    generateLink(`set-${patch}`, 0, `numbox-${patch}`, 0);
+    generateLink(`numbox-${patch}`, 0, `prepend-${patch}`, 0);
+    generateLink(`prepend-${patch}`, 0, `send-${patch}`, 0);
     pos += 120;
   }
 
