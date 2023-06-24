@@ -5,28 +5,33 @@ export const globalsSchema = {
     max: Infinity,
     default: 0,
   },
-  midiDeviceSelected: {
+  selectMidiIn: {
+    type: 'any',
+    default: null,
+    nullable: true,
+  },
+  selectMidiOut: {
+    type: 'any',
+    default: null,
+    nullable: true,
+  },
+  midiInName: {
     type: 'string',
     default: null,
     nullable: true,
   },
-  midiDeviceList: {
-    type: 'any',
-    default: null,
-    nullable: true,
-  },
-  selectedController: {
+  midiOutName: {
     type: 'string',
     default: null,
     nullable: true,
   },
-  selectedControllerFaderValues: {
+  selectControllers: {
     type: 'any',
-    default: null, 
+    default: null,
     nullable: true,
   },
-  controllerList: {
-    type: 'any',
+  controllerName: {
+    type: 'string',
     default: null,
     nullable: true,
   },

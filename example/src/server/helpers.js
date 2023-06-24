@@ -1,5 +1,4 @@
 import * as MCU from './mackie-control.cjs';
-import path from 'path';
 import fs from 'fs';
 
 function dBtoRaw(dB, transfertTable) {
@@ -79,48 +78,9 @@ export function parseTrackConfig(config) {
   const range = getFaderRange(config);
 
   return {
-    patch: config.patch,
+    channel: config.channel,
     name: config.name,
     faderType: config.type,
     faderRange: range,
   };
-}
-
-export function initMidiDevice(midiDevice) {
-  MCU.stop();
-  const port = MCU.getPorts().findIndex(e => e === midiDevice);
-
-  if (port !== -1) {
-    MCU.start(msg => {
-      console.log('Midi Init:', midiDevice);
-    }, { port: port });
-  } else {
-    console.log("[midi.mixer] - Cannot find midi device !");
-  }
-
-  // init fader mode
-  MCU.setFaderMode('CH1', 'position', 0);
-  MCU.setFaderMode('CH2', 'position', 0);
-  MCU.setFaderMode('CH3', 'position', 0);
-  MCU.setFaderMode('CH4', 'position', 0);
-  MCU.setFaderMode('CH5', 'position', 0);
-  MCU.setFaderMode('CH6', 'position', 0);
-  MCU.setFaderMode('CH7', 'position', 0);
-  MCU.setFaderMode('CH8', 'position', 0);
-  MCU.setFaderMode('MAIN', 'position', 0);
-}
-
-
-export function getMidiDeviceList() {
-  const ports = MCU.getPorts();
-  return ports;
-}
-
-export function getControllerList() {
-  const controllersFolder = fs.readdirSync(path.resolve(process.cwd(),'./src/server/controllers'));
-  const controllers = [];
-  controllersFolder.forEach(e => {
-    controllers.push(e.split('.').shift());
-  });
-  return controllers;
 }

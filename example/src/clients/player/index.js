@@ -48,7 +48,7 @@ function renderTrack(track) {
   const _setTrack = _.throttle((...args) => track.set(...args), 50, { 'trailing': true });
   const component = {
     render: () => {
-      const debug = `trackId = ${track.get('trackId')} // swID = ${track.get('id')} // patch = ${track.get('patch')} // name = ${track.get('name')} // ${track.get('faderType')}`;
+      const debug = `channel = ${track.get('channel')} // name = ${track.get('name')} // ${track.get('faderType')}`;
       return html`
       <sc-text
         value=${debug}
@@ -88,14 +88,25 @@ function renderParams(globals) {
     render: () => {
       return html`
       <sc-text
-        value="midi device"
+        value="midi input device"
         readonly
       ></sc-text>
       <select
-        @change=${e => globals.set({midiDeviceSelected: e.target.value}, {source:'web'})}
+        @change=${e => globals.set({midiInName: e.target.value}, {source:'web'})}
       >
-        ${globals.get('midiDeviceList').map(name => {
-          return html`<option value="${name}" ?selected="${name === globals.get('midiDeviceSelected')}">${name}</option>`;
+        ${globals.get('selectMidiIn').map(name => {
+          return html`<option value="${name}" ?selected="${name === globals.get('midiInName')}">${name}</option>`;
+        })}
+      </select>
+      <sc-text
+        value="midi output device"
+        readonly
+      ></sc-text>
+      <select
+        @change=${e => globals.set({midiOutName: e.target.value}, {source:'web'})}
+      >
+        ${globals.get('selectMidiOut').map(name => {
+          return html`<option value="${name}" ?selected="${name === globals.get('midiOutName')}">${name}</option>`;
         })}
       </select>
       <sc-text
@@ -103,10 +114,10 @@ function renderParams(globals) {
         readonly
       ></sc-text>
       <select
-        @change=${e => globals.set({selectedController: e.target.value}, {source: 'web'})}
+        @change=${e => globals.set({controllerName: e.target.value}, {source: 'web'})}
       >
-        ${globals.get('controllerList').map(name => {
-          return html`<option value="${name}" ?selected="${name === globals.get('selectedController')}">${name}</option>`;
+        ${globals.get('selectControllers').map(name => {
+          return html`<option value="${name}" ?selected="${name === globals.get('controllerName')}">${name}</option>`;
         })}
       </select>
       `;
@@ -138,11 +149,11 @@ async function main($container) {
   component.push(renderParams(globals));
 
   tracks.forEach(track => {
-    if (track.get('trackId') !== null) {
+    if (track.get('disabled') === false) {
       const comp = renderTrack(track);
       component.push(comp);
     } else {
-      const comp = renderEmptyTrack(track.get('id'));
+      const comp = renderEmptyTrack(track.get('channel'));
       component.push(comp);
     }
   });

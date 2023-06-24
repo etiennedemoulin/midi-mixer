@@ -33,16 +33,26 @@ server.on('bundle', async (msg) => {
     address.shift();
     const trackFlag = address[0];
     const trackNumber = 'midi-'+address[1];
-    const faderFlag = address[2];
     const dataType = address[3];
     const value = parseFloat(e[1]);
 
-    if (trackFlag === 'track' && faderFlag === 'fader') {
+    if (trackFlag === 'track' && address[2] === 'fader') {
       // this is a fader
       if (dataType === 'user') {
         // propagating user value
         await Max.setDict('midiMaxDict', {patch:trackNumber, value:value});
         await Max.outlet('update bang');
+      }
+    }
+    if (trackFlag === 'track') {
+      if (address[2] === 'create') {
+        // /track/1/create midi-1
+        console.log("create track " + e[1]);
+        // createTrack()
+      } else if (address[2] === 'remove') {
+        console.log("remove track " + e[1]);
+        // /track/1/delete midi-1
+        // removeTrack()
       }
     }
     // Max.outlet(e);
@@ -71,9 +81,9 @@ async function onMessage(...args) {
     const value = args[0];
 
     try {
-      const trackId = key.split('-')[1];
+      const channel = key.split('-')[1];
       const client = new Client('127.0.0.1', 3333);
-      client.send(`/track/${trackId}/fader/user`, value, () => {
+      client.send(`/track/${channel}/fader/user`, value, () => {
         client.close();
       });
 
@@ -104,7 +114,7 @@ function generateLink(varNameOut, outlet, varNameIn, inlet) {
 }
 
 // Init when Max is ready
-function init(name, patchPath, patchIndex, midiDevice, controller) {
+async function init(name, patchPath, patchIndex, midiDevice, controller) {
   patchIndex = patchIndex;
   if (patchPath === '') {
     cwd = process.cwd();
@@ -115,52 +125,6 @@ function init(name, patchPath, patchIndex, midiDevice, controller) {
     cwd = `/${cleaned.join('/')}`;
   }
   boxesDictName = `${patchIndex}_midi-mixer_existing_boxes`;
-  readConfig(name);
-};
-
-
-function _getPorts() {
-  XT.getPorts().forEach((e,i) => {
-    Max.post(`[midi.mixer] - #${i}: ${e}`);
-  });
-}
-
-function _getDevices() {
-  const controllers = fs.readdirSync('../Controllers');
-  controllers.forEach(e => {
-    console.log(`${e.split('.').shift()}`);
-  });
-};
-
-// Read configuration file midi.json
-function readConfig(name) {
-  if (name === 0) {
-    name = "../help/default.json";
-    console.log('[midi.mixer] - Using default configuration file: ', path.resolve(process.cwd(), '../help/default.json'));
-  }
-
-  // read config file
-  configFilename = path.join(cwd, name);
-
-  if (fs.existsSync(configFilename)) {
-    config = JSON5.parse(fs.readFileSync(configFilename));
-    createPatch(config);
-    //dostuff
-
-    fs.watchFile(configFilename, () => {
-      config = JSON5.parse(fs.readFileSync(configFilename));
-      createPatch(config);
-      //dostuffagain
-    });
-  } else {
-    throw new Error(`no config file found, please create "${configFilename}" file and relaunch`);
-    process.exit();
-  }
-}
-
-
-// Create patch boxes and init fader values
-async function createPatch(config) {
 
   existingBoxes = await Max.getDict(boxesDictName);
 
@@ -175,10 +139,23 @@ async function createPatch(config) {
 
   existingBoxes.list = [];
 
+};
+
+
+function _getPorts() {
+
+}
+
+function _getDevices() {
+
+};
+
+// Create patch boxes and init fader values
+async function createTrack(config) {
   // create patch
   let pos = 0;
   for (i in config) {
-    const patch = config[i].patch;
+    const patch = config[i].name;
     generateBox(`receive-${patch}`, "receive", [`${patch}`], { x: 600+pos, y: 400 }, 0);
     generateBox(`set-${patch}`, "prepend", ['set'], { x: 600+pos, y: 430 }, 0);
     generateBox(`numbox-${patch}`, "flonum", [''], { x: 600+pos, y: 460 }, 0);
@@ -190,11 +167,19 @@ async function createPatch(config) {
     generateLink(`prepend-${patch}`, 0, `send-${patch}`, 0);
     pos += 120;
   }
-
   // update created boxes
   await Max.setDict(boxesDictName, existingBoxes);
+}
 
-
+async function deleteTrack(config) {
+  for (i in config) {
+    const patch = config[i].name;
+    deleteBox(`receive-${patch}`);
+    deleteBox(`set-${patch}`);
+    deleteBox(`numbox-${patch}`);
+    deleteBox(`prepend-${patch}`);
+    deleteBox(`send-${patch}`);
+  }
 }
 
 Max.outlet('bootstraped');

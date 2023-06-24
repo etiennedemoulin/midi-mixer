@@ -26,6 +26,7 @@
     "@soundworks/plugin-platform-init": "^1.0.0-alpha.2",
     "json5": "^2.2.3",
     "jw-xtouch": "^1.0.1",
+    "jzz": "^1.6.4",
     "lit": "^2.2.2",
     "lodash": "^4.17.21",
     "midi": "^1.0.4",

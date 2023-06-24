@@ -6,18 +6,17 @@ import { loadConfig } from '../utils/load-config.js';
 import '../utils/catch-unhandled-errors.js';
 
 import fs from 'fs';
+import path from 'path';
 
-import { setFaderView, setMixerView, onFaderMove, displayUserFader } from './faderCommunicator.js';
-import { userToRaw, rawToUser, getFaderRange, parseTrackConfig, initMidiDevice, getMidiDeviceList, getControllerList } from './helpers.js';
-import { trackSchema } from './schemas/tracks.js';
-import { globalsSchema } from './schemas/globals.js';
-import * as MCU from './mackie-control.cjs';
-// import midiConfig from './midiConfig.js';
-
+import JZZ from 'jzz';
 import osc from 'osc';
-
 import _ from 'lodash';
 import JSON5 from 'json5';
+
+import { userToRaw, rawToUser, getFaderRange, parseTrackConfig } from './helpers.js';
+import { trackSchema } from './schemas/tracks.js';
+import { globalsSchema } from './schemas/globals.js';
+import { onMidiOutFail, onMidiInFail, getMidiDeviceList, onFaderMove, displayUserFader, setFaderView, setMixerView } from './midi.js';
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -55,7 +54,7 @@ const udpPort = new osc.UDPPort({
     metadata: true
 });
 
-// Open the socket.
+// Open the OSC socket.
 udpPort.open();
 
 // register tracks
@@ -64,37 +63,76 @@ server.stateManager.registerSchema('globals', globalsSchema);
 // register globals
 const globals = await server.stateManager.create('globals');
 
-globals.onUpdate(async(updates) => {
-  if (updates.controllerList === null) {
-    const controllerList = getControllerList();
-    await globals.set({ controllerList: controllerList });
-  };
-  if (updates.selectedController === null) {
-    const controllerList = globals.get('controllerList');
-    await globals.set({selectedController: controllerList[0]});
-  };
-  if (updates.midiDeviceList === null) {
-    const midiDeviceList = getMidiDeviceList();
-    await globals.set({ midiDeviceList: midiDeviceList });
-  };
-  if (updates.midiDeviceSelected === null) {
-    const midiDeviceList = globals.get('midiDeviceList');
-    await globals.set({midiDeviceSelected: midiDeviceList[0]});
-  };
-}, true)
+// initialise midi lib
+let midiInPort;
+let midiOutPort;
 
-server.stateManager.registerUpdateHook('globals', async(updates) => {
-  if (updates.selectedController) {
-    const { fader } = await import (`./controllers/${updates.selectedController}.js`);
-    await globals.set({selectedControllerFaderValues: fader});
-  };
-  if (updates.midiDeviceSelected) {
-    const midiDevice = await globals.get('midiDeviceSelected');
-    if (midiDevice !== null) {
-      initMidiDevice(midiDevice);
-    }
+function onMidiInSuccess() {
+  if (midiInPort) {
+    midiInPort.close();
   }
+  midiInPort = this;
+  const midiInName = this.name();
+  globals.set({ midiInName: midiInName }, {source:'server'});
+  console.log(`- Midi Input Device: ${midiInName}`);
+}
+
+function onMidiOutSuccess() {
+  if (midiOutPort) {
+    midiOutPort.close();
+  }
+  midiOutPort = this;
+  const midiOutName = this.name();
+  globals.set({ midiOutName: midiOutName }, {source:'server'});
+  console.log(`- Midi Output Device: ${midiOutName}`);
+}
+
+JZZ().and(function() {
+  const info = this.info();
+  getMidiDeviceList(info, globals);
 });
+
+const logger = JZZ.Widget({ _receive: onMidiReceive });
+
+globals.onUpdate((updates, oldValues, context) => {
+  if ('midiInName' in updates) {
+    let name = updates.midiInName;
+    if (name === null) {
+      name = updates.selectMidiIn[0]
+    }
+    const input = JZZ().openMidiIn(name).or(onMidiInFail).and(onMidiInSuccess);
+    input.connect(logger);
+  };
+  if ('midiOutName' in updates) {
+    let name = updates.midiOutName;
+    if (name === null) {
+      name = updates.selectMidiOut[0]
+    }
+    JZZ().openMidiOut(name).or(onMidiOutFail).and(onMidiOutSuccess);
+  };
+}, true);
+
+// _____________________
+
+// initialise controllers
+let controllerFader;
+const controllersFolder = fs.readdirSync(path.resolve(process.cwd(),'./src/server/controllers'));
+const selectControllers = [];
+controllersFolder.forEach(e => {
+  selectControllers.push(e.split('.').shift());
+});
+globals.set({ selectControllers: selectControllers });
+globals.set({ controllerName: selectControllers[0] });
+
+
+// Config changes from web
+globals.onUpdate(async (updates) => {
+  if (updates.controllerName) {
+    const { fader } = await import (`./controllers/${updates.controllerName}.js`);
+    controllerFader = fader;
+    console.log(`- Updated controller ${updates.controllerName}`);
+  };
+}, true);
 
 // grab config file an init states
 const filesystem = await server.pluginManager.get('filesystem');
@@ -106,11 +144,10 @@ filesystem.onUpdate(async updates => {
   const midiConfigFilename = tree.children.find(f => f.name === 'example-1.json').path;
   const midiConfig = JSON5.parse(fs.readFileSync(midiConfigFilename));
 
-  const trackIds = Object.keys(midiConfig)
-    .map(name => name === 'MAIN' ? 0 : parseInt(name))
+  const channels = midiConfig.map(tracks => (tracks.channel === 'MAIN') ? 0 : parseInt(tracks.channel))
     .sort((a, b) => a < b ? -1 : 1);
 
-  const maxTrackIndex = Math.max(...trackIds);
+  const maxTrackIndex = Math.max(...channels);
 
   if (maxTrackIndex + 1 > tracks.length) {
     console.log(`- create track from ${tracks.length} to ${maxTrackIndex}`);
@@ -124,31 +161,36 @@ filesystem.onUpdate(async updates => {
       onTrackUpdate(newValues, oldValues, context, tracks[i]);
     });
 
-    if (!trackIds.includes(i)) {
-      await tracks[i].set({ id: i }, { source: 'config-file' });
-    } else {
-      await tracks[i].set({
-        id: i,
-        trackId: i,
-      }, { source: 'config-file' });
-    }
+    // const disabled = (midiConfig[i].channel === i+1) ? false : true;
+    const disabled = channels.find(f => f === i) === undefined ? true : false;
+
+    await tracks[i].set({ channel: i, disabled: disabled }, { source: 'config-file' });
+
   }
 
-  // check tracks taht may have been removed
+  // check tracks that may have been removed
   tracks.forEach(async track => {
-    const trackId = track.get('trackId');
+    const channel = track.get('channel');
 
     // already disabled
-    if (trackId === null) {
+    if (track.get('disabled') === true) {
       return;
     }
 
-    if (!trackIds.includes(trackId)) {
-      console.log('- disable track:', trackId);
+    if (!channels.includes(channel)) {
+      console.log('- disable track:', channel);
+
+      udpPort.send({
+        timeTag: osc.timeTag(0),
+        packets: [{
+          address: `/track/${channel}/remove`,
+          args: [{ type: 's', value: track.get('name')}]
+        }],
+      }, "127.0.0.1", 3334);
 
       await track.set({
-        trackId: null,
-        patch: null,
+        channel: null,
+        disabled: true,
         name: null,
         faderType: null,
         faderBytes: null,
@@ -157,15 +199,27 @@ filesystem.onUpdate(async updates => {
         faderRange: null,
         mute: null,
       }, { source: 'config-file' });
+
     }
   });
 
   // apply updates if any
-  trackIds.forEach(async trackId => {
-    const track = tracks.find(s => s.get('trackId') === trackId);
-    // console.log(trackId, track);
-    const updates = parseTrackConfig(midiConfig[trackId === 0 ? 'MAIN' : `${trackId}`]);
-    await track.set(updates, { source: 'config-file' });
+  channels.forEach(async channel => {
+    const track = tracks.find(s => s.get('channel') === channel);
+    const updatedChannel = midiConfig.find(f => f.channel === (channel === 0 ? 'MAIN' : channel));
+    // console.log(updatedChannel);
+    const updates = parseTrackConfig(updatedChannel);
+    console.log(track.get('channel'));
+    // await track.set(updates, { source: 'config-file' });
+
+    // udpPort.send({
+    //   timeTag: osc.timeTag(0),
+    //   packets: [{
+    //     address: `/track/${channel}/create`,
+    //     args: [{ type: 's', value: track.get('name')}]
+    //   }],
+    // }, "127.0.0.1", 3334);
+
   });
 
   // send infos to mixer
@@ -188,19 +242,17 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
     let raw = null;
     let bytes = null;
 
-    const fader = await globals.get('selectedControllerFaderValues');
-
     if (key === 'faderRaw') {
-      user = rawToUser(input, fader, currentValues);
+      user = rawToUser(input, controllerFader, currentValues);
       bytes = parseInt(input * (Math.pow(2,14) - 1));
       raw = input;
     } else if (key === 'faderUser') {
-      raw = userToRaw(input, fader, currentValues);
+      raw = userToRaw(input, controllerFader, currentValues);
       bytes = parseInt(raw * (Math.pow(2,14) - 1));
       user = input;
     } else if (key === 'faderBytes') {
       raw = input / (Math.pow(2, 14) - 1);
-      user = rawToUser(raw, fader, currentValues);
+      user = rawToUser(raw, controllerFader, currentValues);
       bytes = input;
     }
 
@@ -218,14 +270,14 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
 // _______________________________
 function onTrackUpdate(newValues, oldValues, context, track) {
   if (context.source !== 'midi') {
-    setFaderView(track.get('trackId'), globals.get('activePage'), tracks);
+    setFaderView(track.get('channel'), globals.get('activePage'), tracks);
   }
   if (context.source !== 'osc') {
     udpPort.send({
         timeTag: osc.timeTag(0),
         packets: [
             {
-                address: `/track/${track.get('trackId')}/fader/user`,
+                address: `/track/${track.get('channel')}/fader/user`,
                 args: [
                     {
                         type: "f",
@@ -234,7 +286,7 @@ function onTrackUpdate(newValues, oldValues, context, track) {
                 ]
             },
             {
-                address: `/track/${track.get('trackId')}/fader/raw`,
+                address: `/track/${track.get('channel')}/fader/raw`,
                 args: [
                     {
                         type: "f",
@@ -243,7 +295,7 @@ function onTrackUpdate(newValues, oldValues, context, track) {
                 ]
             },
             {
-                address: `/track/${track.get('trackId')}/fader/bytes`,
+                address: `/track/${track.get('channel')}/fader/bytes`,
                 args: [
                     {
                         type: "f",
@@ -258,56 +310,67 @@ function onTrackUpdate(newValues, oldValues, context, track) {
 
 // Listen for incoming OSC messages.
 udpPort.on("message", function (oscMsg, timeTag, info) {
-  oscMsg.args.forEach(msg => {
-    const address = oscMsg.address.split('/');
-    address.shift();
-    const value = parseFloat(msg.value);
+  const address = oscMsg.address.split('/');
+  address.shift();
+  const header = address[0];
+  if (header === 'track') {
+    const track = tracks.find(t => t.get('channel') === channel);
     const channel = parseInt(address[1]);
-    const track = tracks.find(t => t.get('trackId') === channel);
-    const header = address[0];
-    if (header === 'track' && track !== undefined) {
-      if (address[2] === 'fader' && address[3] === 'user') {
-        track.set({ faderUser: value }, {source: 'osc'});
-      } else if (address[2] === 'fader' && address[3] === 'raw') {
-        track.set({ faderRaw: value }, {source: 'osc'});
-      } else if (address[2] === 'fader' && address[3] === 'bytes') {
-        track.set({ faderBytes: value}, {source: 'osc'});
-      };
-    };
-  });
+    if (track !== undefined) {
+      if (address[2] === 'fader') {
+        const valueType = address[3];
+        if (valueType === 'user') {
+          const value = parseFloat(oscMsg.value[0]);
+          track.set({ faderUser: value }, {source: 'osc'});
+        } else if (valueType === 'raw') {
+          const value = parseFloat(oscMsg.value[0]);
+          track.set({ faderRaw: value }, {source: 'osc'});
+        } else if (valueType === 'bytes') {
+          const value = parseFloat(oscMsg.value[0]);
+          track.set({ faderBytes: value}, {source: 'osc'});
+        }
+      }
+    }
+  } else if (header === 'midi') {
+    if (address[1] === 'config') {
+      console.log(midiConfig);
+    }
+  }
 });
 
 // _______________________
 // listening for updates on midi side
 // _______________________
-MCU.controlMap({
-  'button': {
-    'down': {
-      'FADER BANK RIGHT': function() {
-        const idMap = tracks.map(t => t.get('trackId'));
-        const lastFader = idMap[idMap.length - 1];
-        const activePage = globals.get('activePage');
-        const lastPage = Math.floor((lastFader - 1) / 8);
-        if (activePage < lastPage) {
-          globals.set({ activePage: activePage + 1 }, {source:'midi'});
-          setMixerView(globals.get('activePage'), tracks);
-        }
-       },
-      'FADER BANK LEFT': function() {
-        const activePage = globals.get('activePage');
-        if (activePage > 0) {
-          globals.set({ activePage: activePage - 1 }, {source: 'midi'});
-          setMixerView(globals.get('activePage'), tracks);
-        }
-      },
-    },
-  },
-  'fader': function(name, state) {
-    onFaderMove(name, state, globals.get('activePage'), tracks);
-    displayUserFader(globals.get('activePage'), tracks);
-  },
-});
+// MCU.controlMap({
+//   'button': {
+//     'down': {
+//       'FADER BANK RIGHT': function() {
+//         const idMap = tracks.map(t => t.get('trackId'));
+//         const lastFader = idMap[idMap.length - 1];
+//         const activePage = globals.get('activePage');
+//         const lastPage = Math.floor((lastFader - 1) / 8);
+//         if (activePage < lastPage) {
+//           globals.set({ activePage: activePage + 1 }, {source:'midi'});
+//           setMixerView(globals.get('activePage'), tracks);
+//         }
+//        },
+//       'FADER BANK LEFT': function() {
+//         const activePage = globals.get('activePage');
+//         if (activePage > 0) {
+//           globals.set({ activePage: activePage - 1 }, {source: 'midi'});
+//           setMixerView(globals.get('activePage'), tracks);
+//         }
+//       },
+//     },
+//   },
+//   'fader': function(name, state) {
+//     onFaderMove(name, state, globals.get('activePage'), tracks);
+//     displayUserFader(globals.get('activePage'), tracks);
+//   },
+// });
 
-MCU.on('debug', (e) => {
-  // console.log(e);
-});
+function onMidiReceive(msg) {
+  console.log(msg.toString());
+}
+
+

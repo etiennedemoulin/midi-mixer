@@ -1,37 +1,29 @@
-{
-  '1': {
-    // channel: 1,
-    patch:'pouet',
-    name:'mile',
-    type:'linear',
-    range: [10, 2]
+[
+  {
+    channel: 1,
+    name: 'midi-1',
+    type: 'volume',
   },
-  '4': {
-    patch:"fader1",
-    name:"1",
-    type:'volume'
+  {
+    channel: 2,
+    name: 'midi-2',
+    type: 'linear',
+    range: [0, 127],
   },
-  '3': {
-    patch:'fader5',
-    name:'ppouet',
-    type:'volume'
+  {
+    channel: 3,
+    name: 'midi-3',
+    type: 'linear',
+    range: [10, 2],
   },
-  '7': {
-    patch:"fader2",
-    name:"7",
-    type:'linear',
-    range: [0, 127]
+  {
+    channel: 9,
+    name: 'master',
+    type: 'volume',
   },
-  '15': {
-    patch:"fader3",
-    name:"lastFader",
-    type:'volume'
+  {
+    channel: 'MAIN',
+    name: 'main-fader',
+    type: 'volume',
   },
-  '23': {
-    // channel: 0,
-    patch:'pouet',
-    name:'main',
-    type:'volume',
-  },
-}
-
+]

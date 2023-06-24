@@ -1,21 +1,14 @@
 export const trackSchema = {
-  id: {
-    type:'integer',
-    min:0,
-    max:Infinity,
-    default:0,
-  },
-  trackId : {
+  channel : {
     type:'any',
     min:0,
     max:Infinity,
     default:null,
     nullable: true
   },
-  patch: {
-    type: 'string',
-    default: null,
-    nullable: true,
+  disabled: {
+    type: 'boolean',
+    default: true,
   },
   name: {
     type: 'string',
