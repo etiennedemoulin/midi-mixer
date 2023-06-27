@@ -50,7 +50,7 @@ async function main($container) {
   tracks.onAttach(() => $layout.requestUpdate());
   tracks.onDetach(() => $layout.requestUpdate());
 
-  // $layout.addComponent(renderParams(globals, filesystem));
+  $layout.addComponent(renderParams(globals, filesystem));
   $layout.addComponent({
     render: () => {
       return tracks.map(track => {

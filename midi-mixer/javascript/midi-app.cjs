@@ -168,12 +168,6 @@ async function init(name, patchPath, patchIndex, midiDevice, controller) {
 
   existingBoxes.list = [];
 
-  // send init message to server, and give the complete schema definition
-  const client = new Client('127.0.0.1', 3333);
-  client.send(`/config`, 0, () => {
-    client.close();
-  });
-
 };
 
 

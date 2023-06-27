@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 34.0, 100.0, 1069.0, 769.0 ],
+		"rect" : [ 61.0, 100.0, 1222.0, 769.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -56,7 +56,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1069.0, 743.0 ],
+						"rect" : [ 0.0, 26.0, 1222.0, 743.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 13.0,
@@ -1032,7 +1032,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 34.0, 126.0, 1069.0, 743.0 ],
+						"rect" : [ 61.0, 126.0, 1222.0, 743.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 13.0,
@@ -1063,6 +1063,54 @@
 						"assistshowspatchername" : 0,
 						"boxes" : [ 							{
 								"box" : 								{
+									"id" : "obj-14",
+									"linecount" : 2,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 183.0, 401.0, 150.0, 36.0 ],
+									"text" : "config file has to be set from Max"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-12",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 10.0, 223.0, 29.5, 23.0 ],
+									"text" : "edit"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"fontface" : 1,
+									"id" : "obj-10",
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 10.0, 144.0, 79.0, 21.0 ],
+									"text" : "WARNING :",
+									"textcolor" : [ 1.0, 0.0, 0.0, 1.0 ]
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-8",
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 10.0, 167.0, 488.0, 21.0 ],
+									"text" : "This object is a singletone and should be instanciated only once for all Max patches"
+								}
+
+							}
+, 							{
+								"box" : 								{
 									"id" : "obj-7",
 									"maxclass" : "message",
 									"numinlets" : 2,
@@ -1080,33 +1128,9 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 608.5, 51.5, 507.0, 358.0 ],
+									"patching_rect" : [ 655.0, 41.5, 507.0, 358.0 ],
 									"rendermode" : 0,
 									"url" : "localhost:8000"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-5",
-									"linecount" : 4,
-									"maxclass" : "comment",
-									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 118.0, 355.0, 150.0, 65.0 ],
-									"text" : "@TODO \nfaire le mapping des tracks available dans max"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-15",
-									"maxclass" : "message",
-									"numinlets" : 2,
-									"numoutlets" : 1,
-									"outlettype" : [ "" ],
-									"patching_rect" : [ 138.0, 547.0, 29.5, 23.0 ],
-									"text" : "edit"
 								}
 
 							}
@@ -1372,87 +1396,12 @@
 , 							{
 								"box" : 								{
 									"bubble" : 1,
-									"id" : "obj-36",
-									"linecount" : 2,
-									"maxclass" : "comment",
-									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 174.0, 498.5, 228.0, 40.0 ],
-									"text" : "click to log available midi mapping tables into Max Console"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-37",
-									"maxclass" : "message",
-									"numinlets" : 2,
-									"numoutlets" : 1,
-									"outlettype" : [ "" ],
-									"patching_rect" : [ 94.0, 507.0, 73.0, 23.0 ],
-									"text" : "getDevices"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"bubble" : 1,
-									"id" : "obj-31",
-									"linecount" : 2,
-									"maxclass" : "comment",
-									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 134.5, 439.0, 228.0, 40.0 ],
-									"text" : "click to log available midi input device into Max Console"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-32",
-									"maxclass" : "message",
-									"numinlets" : 2,
-									"numoutlets" : 1,
-									"outlettype" : [ "" ],
-									"patching_rect" : [ 64.5, 446.5, 57.0, 23.0 ],
-									"text" : "getPorts"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"bubble" : 1,
-									"id" : "obj-33",
-									"linecount" : 4,
-									"maxclass" : "comment",
-									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 339.0, 558.0, 228.0, 69.0 ],
-									"text" : "attributes :\n@port <midi input port\n@device <midi mapping table for volume control>"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"bubble" : 1,
 									"id" : "obj-30",
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 69.5, 185.5, 91.0, 25.0 ],
+									"patching_rect" : [ 49.5, 223.0, 91.0, 25.0 ],
 									"text" : "open editor"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-29",
-									"maxclass" : "message",
-									"numinlets" : 2,
-									"numoutlets" : 1,
-									"outlettype" : [ "" ],
-									"patching_rect" : [ 36.5, 186.5, 29.5, 23.0 ],
-									"text" : "edit"
 								}
 
 							}
@@ -1461,10 +1410,11 @@
 									"bubble" : 1,
 									"bubbleside" : 2,
 									"id" : "obj-19",
+									"linecount" : 2,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 59.0, 235.0, 174.0, 40.0 ],
+									"patching_rect" : [ 25.0, 263.0, 155.0, 55.0 ],
 									"text" : "double-click to see the state"
 								}
 
@@ -1476,8 +1426,8 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 59.0, 285.0, 68.0, 23.0 ],
-									"text" : "midi.mixer"
+									"patching_rect" : [ 10.0, 326.0, 159.0, 23.0 ],
+									"text" : "midi.mixer example-1.json"
 								}
 
 							}
@@ -1509,7 +1459,7 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"parameter_enable" : 0,
-									"patching_rect" : [ 185.0, 285.0, 235.027511596679688, 39.0 ]
+									"patching_rect" : [ 194.0, 326.0, 235.027511596679688, 39.0 ]
 								}
 
 							}
@@ -1517,7 +1467,7 @@
 						"lines" : [ 							{
 								"patchline" : 								{
 									"destination" : [ "obj-3", 0 ],
-									"source" : [ "obj-29", 0 ]
+									"source" : [ "obj-12", 0 ]
 								}
 
 							}
@@ -1697,7 +1647,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1069.0, 743.0 ],
+						"rect" : [ 0.0, 26.0, 1222.0, 743.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1790,7 +1740,7 @@
 				"implicit" : 1
 			}
 , 			{
-				"name" : "midi-app.js",
+				"name" : "midi-app.cjs",
 				"bootpath" : "~/Github/midi-mixer/midi-mixer/javascript",
 				"patcherrelativepath" : "../javascript",
 				"type" : "TEXT",
