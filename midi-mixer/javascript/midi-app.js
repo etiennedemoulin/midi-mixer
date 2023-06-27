@@ -10,6 +10,8 @@ let cwd = null;
 let patchPath = null;
 let boxesDictName = null;
 let patchIndex = null;
+let config = [];
+let pos = 0;
 
 Max.addHandlers({
   [Max.MESSAGE_TYPES.ALL]: (handled, ...args) => onMessage(...args),
@@ -28,34 +30,57 @@ const server = new Server(3334, '0.0.0.0');
 // })
 
 server.on('bundle', async (msg) => {
+  // console.log(msg);
   msg.elements.forEach(async (e) => {
     const address = e[0].split('/');
     address.shift();
     const trackFlag = address[0];
-    const trackNumber = 'midi-'+address[1];
-    const dataType = address[3];
-    const value = parseFloat(e[1]);
-
-    if (trackFlag === 'track' && address[2] === 'fader') {
-      // this is a fader
-      if (dataType === 'user') {
-        // propagating user value
-        await Max.setDict('midiMaxDict', {patch:trackNumber, value:value});
-        await Max.outlet('update bang');
-      }
-    }
     if (trackFlag === 'track') {
       if (address[2] === 'create') {
-        // /track/1/create midi-1
-        console.log("create track " + e[1]);
-        // createTrack()
+        const channel = parseInt(address[1]);
+        config.push({
+          channel: channel,
+          name: null,
+        });
       } else if (address[2] === 'remove') {
-        console.log("remove track " + e[1]);
-        // /track/1/delete midi-1
-        // removeTrack()
+        const channel = parseInt(address[1]);
+        const index = config.findIndex(e => e.channel === channel);
+        if (config[index].name !== null) {
+          await deleteTrack([config[index]], true);
+        }
+        config.splice(index, 1);
+      } else if (address[2] === 'name') {
+        const channel = parseInt(address[1]);
+        const name = e[1];
+        const index = config.findIndex(e => e.channel === channel);
+        if (config[index].name !== name) {
+          await deleteTrack([config[index]], false);
+          config[index].name = name;
+          if (name !== null) {
+            await createTrack([config[index]]);
+          }
+        }
+      } else if (address[2] === 'fader') {
+        const channel = parseInt(address[1]);
+        const index = config.findIndex(e => e.channel === channel);
+        if (index === -1) {
+          // not initialized yet
+          return;
+        }
+        const name = config[index].name;
+        const dataType = address[3];
+        if (name === null || e[1] === null) {
+          // not a number of should not be propagated
+          return;
+        }
+        const value = parseFloat(e[1]);
+
+        if (dataType === 'user') {
+          await Max.setDict('midiMaxDict', { patch: name, value: value });
+          await Max.outlet('update bang');
+        }
       }
     }
-    // Max.outlet(e);
   });
 });
 
@@ -65,29 +90,21 @@ async function onMessage(...args) {
   // if (globals.state === null) {
   //   return;
   // }
+  // console.log(args);
 
+  const [key, value] = args
   const handledMessages = ['edit', 'getPorts', 'getDevices', 'init'];
 
-  const cmd = args[0];
-
-  if (handledMessages.includes(cmd)) {
+  if (handledMessages.includes(key)) {
     return;
   }
 
   try {
     // @note - we must accept a list, because array are translated to lists by max
-    const key = args.shift();
-
-    const value = args[0];
-
     try {
-      const channel = key.split('-')[1];
+      const channel = config.find(e => e.name === key).channel;
       const client = new Client('127.0.0.1', 3333);
-      client.send(`/track/${channel}/fader/user`, value, () => {
-        client.close();
-      });
-
-      // await globals.state.set({ [key]: value });
+      client.send(`/track/${channel}/fader/user`, value, () => client.close());
     } catch(err) {
       console.log(err.message);
     }
@@ -96,10 +113,10 @@ async function onMessage(...args) {
   }
 
 }
-function generateBox(varName, boxName, args, position, presentation, comment) {
+function generateBox(varName, boxName, args, position, presentation, presentationPosition = {x:0, y:0}, comment) {
   existingBoxes.list.push(varName);
 
-  const msg = `thispatcher script newobject newobj @text "${boxName} ${args.join(' ')}" @varname ${varName} @patching_position ${position.x} ${position.y} @presentation ${presentation} @comment ${comment}`;
+  const msg = `thispatcher script newobject newobj @text "${boxName} ${args.join(' ')}" @varname ${varName} @patching_position ${position.x} ${position.y} @presentation_position ${presentationPosition.x} ${presentationPosition.y} @presentation ${presentation} @comment ${comment}`;
   Max.outlet(msg);
 }
 
@@ -139,6 +156,12 @@ async function init(name, patchPath, patchIndex, midiDevice, controller) {
 
   existingBoxes.list = [];
 
+  // send init message to server, and give the complete schema definition
+  const client = new Client('127.0.0.1', 3333);
+  client.send(`/config`, 0, () => {
+    client.close();
+  });
+
 };
 
 
@@ -153,17 +176,12 @@ function _getDevices() {
 // Create patch boxes and init fader values
 async function createTrack(config) {
   // create patch
-  let pos = 0;
   for (i in config) {
     const patch = config[i].name;
-    generateBox(`receive-${patch}`, "receive", [`${patch}`], { x: 600+pos, y: 400 }, 0);
-    generateBox(`set-${patch}`, "prepend", ['set'], { x: 600+pos, y: 430 }, 0);
-    generateBox(`numbox-${patch}`, "flonum", [''], { x: 600+pos, y: 460 }, 0);
-    generateBox(`prepend-${patch}`, "prepend", [`${patch}`], { x: 600+pos, y: 490 }, 0);
-    generateBox(`send-${patch}`, "send", [`#0_node`], { x: 600+pos, y: 520 }, 0);
-    generateLink(`receive-${patch}`, 0, `set-${patch}`, 0);
-    generateLink(`set-${patch}`, 0, `numbox-${patch}`, 0);
-    generateLink(`numbox-${patch}`, 0, `prepend-${patch}`, 0);
+    generateBox(`receive-${patch}`, "receive", [patch], { x: 600+pos, y: 400 }, 1, { x: 60, y: 10+pos/4});
+    generateBox(`prepend-${patch}`, "prepend", [patch], { x: 600+pos, y: 430 }, 0);
+    generateBox(`send-${patch}`, "send", [`#0_node`], { x: 600+pos, y: 460 }, 0);
+    generateLink(`receive-${patch}`, 0, `prepend-${patch}`, 0);
     generateLink(`prepend-${patch}`, 0, `send-${patch}`, 0);
     pos += 120;
   }
@@ -171,7 +189,7 @@ async function createTrack(config) {
   await Max.setDict(boxesDictName, existingBoxes);
 }
 
-async function deleteTrack(config) {
+async function deleteTrack(config, decrement) {
   for (i in config) {
     const patch = config[i].name;
     deleteBox(`receive-${patch}`);
@@ -179,6 +197,11 @@ async function deleteTrack(config) {
     deleteBox(`numbox-${patch}`);
     deleteBox(`prepend-${patch}`);
     deleteBox(`send-${patch}`);
+
+    if (decrement) {
+      pos -= 120;
+      pos = Math.max(pos, 0);
+    }
   }
 }
 

@@ -27,103 +27,96 @@ const config = window.SOUNDWORKS_CONFIG;
  */
 // const audioContext = new AudioContext();
 
-function renderEmptyTrack(num) {
-  const component = {
-    render: () => {
-      return html`
-      <sc-text
-        value="empty track ${num}"
-        width="1050"
-        readonly
-      ></sc-text>
-      </br>
-      `;
-    }
-  };
-  return component;
+function renderEmptyTrack(track) {
+  return html`
+    <sc-text
+      value="track ${track.get('channel')} : empty"
+      width="1050"
+      readonly
+    ></sc-text>
+    </br>
+  `;
 }
-
 
 function renderTrack(track) {
   const _setTrack = _.throttle((...args) => track.set(...args), 50, { 'trailing': true });
-  const component = {
-    render: () => {
-      const debug = `channel = ${track.get('channel')} // name = ${track.get('name')} // ${track.get('faderType')}`;
-      return html`
-      <sc-text
-        value=${debug}
-        width="500"
-        readonly
-      ></sc-text>
-      <sc-slider
-        min=${track.getSchema().faderRaw.min}
-        max=${track.getSchema().faderRaw.max}
-        value=${track.get('faderRaw')}
-        @input=${e => _setTrack({
-          faderRaw: e.detail.value
-        }, {
-          source: 'web'
-        })}
-        width="400"
-      ></sc-slider>
-      <sc-number
-        min=${track.get('faderRange')[1][0]}
-        max=${track.get('faderRange')[1][1]}
-        value=${track.get('faderUser')}
-        @input=${e => _setTrack({faderUser: e.detail.value}, {source:'web'})}
-      ></sc-number>
-      <sc-toggle
-        ?active=${track.get('mute')}
-        @change=${e => _setTrack({mute: e.detail.value}, {source:'web'})}
-      ></sc-toggle>
-      </br>
-      `;
-    }
-  };
-  return component;
+
+  return html`
+    <sc-text
+      value=${`track ${track.get('channel')} : ${track.get('name')}`}
+      width="500"
+      readonly
+    ></sc-text>
+    <sc-slider
+      min=${track.getSchema().faderRaw.min}
+      max=${track.getSchema().faderRaw.max}
+      value=${track.get('faderRaw')}
+      @input=${e => _setTrack({
+        faderRaw: e.detail.value
+      }, {
+        source: 'web'
+      })}
+      width="400"
+    ></sc-slider>
+    <sc-number
+      min=${track.get('faderRange')[1][0]}
+      max=${track.get('faderRange')[1][1]}
+      value=${track.get('faderUser')}
+      @input=${e => _setTrack({faderUser: e.detail.value}, {source:'web'})}
+    ></sc-number>
+    <sc-toggle
+      ?active=${track.get('mute')}
+      @change=${e => _setTrack({mute: e.detail.value}, {source:'web'})}
+    ></sc-toggle>
+    </br>
+  `;
 }
 
 function renderParams(globals) {
-  const component = {
-    render: () => {
-      return html`
-      <sc-text
-        value="midi input device"
-        readonly
-      ></sc-text>
-      <select
-        @change=${e => globals.set({midiInName: e.target.value}, {source:'web'})}
-      >
-        ${globals.get('selectMidiIn').map(name => {
-          return html`<option value="${name}" ?selected="${name === globals.get('midiInName')}">${name}</option>`;
-        })}
-      </select>
-      <sc-text
-        value="midi output device"
-        readonly
-      ></sc-text>
-      <select
-        @change=${e => globals.set({midiOutName: e.target.value}, {source:'web'})}
-      >
-        ${globals.get('selectMidiOut').map(name => {
-          return html`<option value="${name}" ?selected="${name === globals.get('midiOutName')}">${name}</option>`;
-        })}
-      </select>
-      <sc-text
-        value="controller"
-        readonly
-      ></sc-text>
-      <select
-        @change=${e => globals.set({controllerName: e.target.value}, {source: 'web'})}
-      >
-        ${globals.get('selectControllers').map(name => {
-          return html`<option value="${name}" ?selected="${name === globals.get('controllerName')}">${name}</option>`;
-        })}
-      </select>
-      `;
-    }
-  };
-  return component;
+  return html`
+    <sc-text
+      value="midi input device"
+      readonly
+    ></sc-text>
+    <select
+      @change=${e => globals.set({midiInName: e.target.value}, {source:'web'})}
+    >
+      ${globals.get('selectMidiIn').map(name => {
+        return html`
+          <option value="${name}" ?selected="${name === globals.get('midiInName')}">
+            ${name}
+          </option>`;
+      })}
+    </select>
+    <sc-text
+      value="midi output device"
+      readonly
+    ></sc-text>
+    <select
+      @change=${e => globals.set({midiOutName: e.target.value}, {source:'web'})}
+    >
+      ${globals.get('selectMidiOut').map(name => {
+        return html`
+          <option value="${name}" ?selected="${name === globals.get('midiOutName')}">
+            ${name}
+          </option>`;
+      })}
+    </select>
+    <sc-text
+      value="controller"
+      readonly
+    ></sc-text>
+    <select
+      @change=${e => globals.set({controllerName: e.target.value}, {source: 'web'})}
+    >
+      ${globals.get('selectControllers').map(name => {
+        return html`
+          <option value="${name}" ?selected="${name === globals.get('controllerName')}">
+            ${name}
+          </option>`;
+      })}
+    </select>
+  `;
 }
 
 async function main($container) {
@@ -139,28 +132,25 @@ async function main($container) {
    */
   await client.start();
 
+  const $layout = createLayout(client, $container);
+
   const tracks = await client.stateManager.getCollection('track');
   const globals = await client.stateManager.attach('globals');
 
-  const $layout = createLayout(client, $container);
-
   tracks.onUpdate(() => $layout.requestUpdate());
-  let component = [];
-  component.push(renderParams(globals));
+  tracks.onAttach(() => $layout.requestUpdate());
+  tracks.onDetach(() => $layout.requestUpdate());
 
-  tracks.forEach(track => {
-    if (track.get('disabled') === false) {
-      const comp = renderTrack(track);
-      component.push(comp);
-    } else {
-      const comp = renderEmptyTrack(track.get('channel'));
-      component.push(comp);
-    }
+  $layout.addComponent(renderParams(globals));
+  $layout.addComponent({
+    render() {
+      return tracks.map(track => {
+        return track.get('disabled') ? renderEmptyTrack(track) : renderTrack(track);
+      });
+    },
   });
 
-  for (let i in component) {
-    $layout.addComponent(component[i]);
-  }
+
 
 }
 

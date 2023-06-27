@@ -17,13 +17,13 @@
     range: [10, 2],
   },
   {
-    channel: 9,
-    name: 'master',
+    channel: 4,
+    name: 'midi-6',
     type: 'volume',
   },
   {
-    channel: 'MAIN',
-    name: 'main-fader',
+    channel: 5,
+    name: 'coucou',
     type: 'volume',
   },
 ]

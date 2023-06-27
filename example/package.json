@@ -30,6 +30,7 @@
     "lit": "^2.2.2",
     "lodash": "^4.17.21",
     "midi": "^1.0.4",
+    "node-osc": "^8.0.11",
     "osc": "^2.4.4"
   },
   "devDependencies": {

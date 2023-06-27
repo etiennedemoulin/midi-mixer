@@ -79,6 +79,7 @@ export function parseTrackConfig(config) {
 
   return {
     channel: config.channel,
+    disabled: false,
     name: config.name,
     faderType: config.type,
     faderRange: range,

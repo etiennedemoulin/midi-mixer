@@ -9,7 +9,8 @@ import fs from 'fs';
 import path from 'path';
 
 import JZZ from 'jzz';
-import osc from 'osc';
+import { removeMaxTrack, createMaxTrack, nameMaxTrack, dumpMaxTrack } from './maxCommunicator.js';
+import { Server as OscServer, Client as OscClient, Bundle } from 'node-osc';
 import _ from 'lodash';
 import JSON5 from 'json5';
 
@@ -47,15 +48,10 @@ server.pluginManager.register('filesystem', filesystemPlugin, {
 
 await server.start();
 
-// Create an osc.js UDP Port listening on port 57121.
-const udpPort = new osc.UDPPort({
-    localAddress: "0.0.0.0",
-    localPort: 3333,
-    metadata: true
+// Create an osc UDP Port listening on port 3333.
+const oscServer = new OscServer(3333, '0.0.0.0', () => {
+  console.log('OSC Server is listening on 3333');
 });
-
-// Open the OSC socket.
-udpPort.open();
 
 // register tracks
 server.stateManager.registerSchema('track', trackSchema);
@@ -136,98 +132,83 @@ globals.onUpdate(async (updates) => {
 
 // grab config file an init states
 const filesystem = await server.pluginManager.get('filesystem');
-const tree = filesystem.getTree();
-const midiConfigFilename = tree.children.find(f => f.name === 'example-1.json').path;
 
-// update on config file update
 filesystem.onUpdate(async updates => {
+  const tree = filesystem.getTree();
   const midiConfigFilename = tree.children.find(f => f.name === 'example-1.json').path;
   const midiConfig = JSON5.parse(fs.readFileSync(midiConfigFilename));
 
-  const channels = midiConfig.map(tracks => (tracks.channel === 'MAIN') ? 0 : parseInt(tracks.channel))
+  const channels = midiConfig
+    .map(tracks => parseInt(tracks.channel))
     .sort((a, b) => a < b ? -1 : 1);
 
   const maxTrackIndex = Math.max(...channels);
 
   if (maxTrackIndex + 1 > tracks.length) {
     console.log(`- create track from ${tracks.length} to ${maxTrackIndex}`);
+    // create new states
+    for (let i = tracks.length; i < maxTrackIndex + 1; i++) {
+      tracks[i] = await server.stateManager.create('track');
+      tracks[i].onUpdate((newValues, oldValues, context) => {
+        onTrackUpdate(newValues, oldValues, context, tracks[i]);
+      });
+
+      if (!channels.includes(i)) {
+        // create disabled track
+        await tracks[i].set({
+          channel: i,
+          disabled: true
+        }, { source: 'config' });
+      } else {
+        // create enabled track
+        await tracks[i].set({
+          channel: i,
+          disabled: false,
+        }, { source: 'config' });
+        // create max track
+      }
+
+      createMaxTrack(tracks[i]);
+
+    }
+  } else {
+    console.log(`- delete track from ${maxTrackIndex + 1} to ${tracks.length - 1}`);
+    for (let i = tracks.length - 1; i > maxTrackIndex; i--) {
+      const track = tracks.find(s => s.get('channel') === i);
+      // delete max track
+      removeMaxTrack(track);
+      await track.delete();
+      tracks.pop();
+    }
   }
 
-  // create states that do not yet exists until maxTrackIndex
-  for (let i = tracks.length; i < maxTrackIndex + 1; i++) {
-    tracks[i] = await server.stateManager.create('track');
-    // listening for incoming soundworks changes
-    tracks[i].onUpdate((newValues, oldValues, context) => {
-      onTrackUpdate(newValues, oldValues, context, tracks[i]);
-    });
-
-    // const disabled = (midiConfig[i].channel === i+1) ? false : true;
-    const disabled = channels.find(f => f === i) === undefined ? true : false;
-
-    await tracks[i].set({ channel: i, disabled: disabled }, { source: 'config-file' });
-
-  }
-
-  // check tracks that may have been removed
+  // remove old states
   tracks.forEach(async track => {
     const channel = track.get('channel');
-
-    // already disabled
-    if (track.get('disabled') === true) {
-      return;
-    }
-
+    if (track.get('disabled') === true) { return };
     if (!channels.includes(channel)) {
       console.log('- disable track:', channel);
-
-      udpPort.send({
-        timeTag: osc.timeTag(0),
-        packets: [{
-          address: `/track/${channel}/remove`,
-          args: [{ type: 's', value: track.get('name')}]
-        }],
-      }, "127.0.0.1", 3334);
-
       await track.set({
-        channel: null,
-        disabled: true,
         name: null,
-        faderType: null,
-        faderBytes: null,
-        faderRaw: null,
-        faderUser: null,
-        faderRange: null,
-        mute: null,
-      }, { source: 'config-file' });
-
+        disabled: true,
+      }, {source:'config'});
+      nameMaxTrack(track);
     }
   });
 
-  // apply updates if any
+  // apply updates on changed state
   channels.forEach(async channel => {
     const track = tracks.find(s => s.get('channel') === channel);
-    const updatedChannel = midiConfig.find(f => f.channel === (channel === 0 ? 'MAIN' : channel));
-    // console.log(updatedChannel);
-    const updates = parseTrackConfig(updatedChannel);
-    console.log(track.get('channel'));
-    // await track.set(updates, { source: 'config-file' });
+    console.log(`update channel ${track.get('channel')}`);
+    const midiConfigLine = midiConfig.find(f => f.channel === channel);
+    const updates = parseTrackConfig(midiConfigLine);
+    await track.set(updates, {source:'config'});
 
-    // udpPort.send({
-    //   timeTag: osc.timeTag(0),
-    //   packets: [{
-    //     address: `/track/${channel}/create`,
-    //     args: [{ type: 's', value: track.get('name')}]
-    //   }],
-    // }, "127.0.0.1", 3334);
+    nameMaxTrack(track);
 
   });
 
-  // send infos to mixer
-  setMixerView(globals.get('activePage'), tracks);
-
-  console.log('- numTracks:', tracks.length);
 }, true);
-
 // ________________________________
 // hook
 // ________________________________
@@ -273,68 +254,45 @@ function onTrackUpdate(newValues, oldValues, context, track) {
     setFaderView(track.get('channel'), globals.get('activePage'), tracks);
   }
   if (context.source !== 'osc') {
-    udpPort.send({
-        timeTag: osc.timeTag(0),
-        packets: [
-            {
-                address: `/track/${track.get('channel')}/fader/user`,
-                args: [
-                    {
-                        type: "f",
-                        value: track.get('faderUser')
-                    }
-                ]
-            },
-            {
-                address: `/track/${track.get('channel')}/fader/raw`,
-                args: [
-                    {
-                        type: "f",
-                        value: track.get('faderRaw')
-                    }
-                ]
-            },
-            {
-                address: `/track/${track.get('channel')}/fader/bytes`,
-                args: [
-                    {
-                        type: "f",
-                        value: track.get('faderBytes')
-                    }
-                ]
-            },            
-        ]
-    }, "127.0.0.1", 3334);
+    const bundle = new Bundle(
+      [`/track/${track.get('channel')}/fader/user`, track.get('faderUser')],
+      [`/track/${track.get('channel')}/fader/raw`, track.get('faderRaw')],
+      [`/track/${track.get('channel')}/fader/bytes`, track.get('faderBytes')]
+    );
+
+    const oscClient = new OscClient('127.0.0.1', 3334);
+    oscClient.send(bundle, () => {
+      oscClient.close();
+    });
   }
 }
 
-// Listen for incoming OSC messages.
-udpPort.on("message", function (oscMsg, timeTag, info) {
-  const address = oscMsg.address.split('/');
+oscServer.on('message', function (msg) {
+  const address = msg[0].split('/');
   address.shift();
   const header = address[0];
   if (header === 'track') {
-    const track = tracks.find(t => t.get('channel') === channel);
     const channel = parseInt(address[1]);
+    const track = tracks.find(t => t.get('channel') === channel);
     if (track !== undefined) {
       if (address[2] === 'fader') {
         const valueType = address[3];
         if (valueType === 'user') {
-          const value = parseFloat(oscMsg.value[0]);
+          const value = parseFloat(msg[1]);
           track.set({ faderUser: value }, {source: 'osc'});
         } else if (valueType === 'raw') {
-          const value = parseFloat(oscMsg.value[0]);
+          const value = parseFloat(msg[1]);
           track.set({ faderRaw: value }, {source: 'osc'});
         } else if (valueType === 'bytes') {
-          const value = parseFloat(oscMsg.value[0]);
+          const value = parseFloat(msg[1]);
           track.set({ faderBytes: value}, {source: 'osc'});
         }
       }
     }
-  } else if (header === 'midi') {
-    if (address[1] === 'config') {
-      console.log(midiConfig);
-    }
+  } else if (header === 'config') {
+    tracks.forEach(track => {
+      dumpMaxTrack(track);
+    });
   }
 });
 
