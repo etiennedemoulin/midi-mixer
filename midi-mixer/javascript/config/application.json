@@ -1,0 +1,10 @@
+{
+  name: 'midi-mixer',
+  author: '',
+  clients: {
+    player: {
+      target: 'browser',
+      default: true,
+    },
+  },
+}

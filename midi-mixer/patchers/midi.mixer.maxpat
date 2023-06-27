@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 72.0, 100.0, 1364.0, 736.0 ],
+		"rect" : [ 64.0, 114.0, 183.0, 381.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 1,
 		"default_fontsize" : 12.0,
@@ -83,8 +83,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 624.0, 69.0, 142.0, 22.0 ],
-					"text" : "script npm link node-mcu"
+					"patching_rect" : [ 624.0, 69.0, 172.0, 22.0 ],
+					"text" : "script npm install child-process"
 				}
 
 			}
@@ -2559,7 +2559,7 @@
 					"numoutlets" : 1,
 					"offset" : [ 0.0, 0.0 ],
 					"outlettype" : [ "bang" ],
-					"patching_rect" : [ 877.0, 118.0, 400.0, 220.0 ],
+					"patching_rect" : [ 742.0, 117.0, 612.0, 204.0 ],
 					"presentation" : 1,
 					"presentation_rect" : [ 0.0, 383.0, 400.0, 220.0 ],
 					"viewvisibility" : 1
@@ -2746,16 +2746,14 @@
 					"numinlets" : 1,
 					"numoutlets" : 2,
 					"outlettype" : [ "", "" ],
-					"patching_rect" : [ 80.0, 96.0, 258.0, 22.0 ],
+					"patching_rect" : [ 80.0, 96.0, 264.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"autostart" : 1,
 						"defer" : 0,
-						"node_bin_path" : "",
-						"npm_bin_path" : "",
 						"watch" : 1
 					}
 ,
-					"text" : "node.script midi-app.js @autostart 1 @watch 1"
+					"text" : "node.script midi-app.cjs @autostart 1 @watch 1"
 				}
 
 			}

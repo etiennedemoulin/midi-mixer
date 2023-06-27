@@ -1,0 +1,35 @@
+[
+  {
+    channel: 1,
+    name: 'midi-1',
+    type: 'volume',
+  },
+  {
+    channel: 2,
+    name: 'midi-2',
+    type: 'linear',
+    range: [
+      0,
+      127,
+    ],
+  },
+  {
+    channel: 3,
+    name: 'midi-3',
+    type: 'linear',
+    range: [
+      10,
+      2,
+    ],
+  },
+  {
+    channel: 4,
+    name: 'midi-6',
+    type: 'volume',
+  },
+  {
+    channel: 5,
+    name: 'coucou',
+    type: 'volume',
+  },
+]
