@@ -28,7 +28,7 @@
     type: 'volume',
   },
   {
-    channel: 5,
+    channel: 7,
     name: 'coucou',
     type: 'volume',
   },

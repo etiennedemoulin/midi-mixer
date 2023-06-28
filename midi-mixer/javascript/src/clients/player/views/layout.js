@@ -18,34 +18,6 @@ import '../../components/sw-credits.js';
  * setInterval(() => $layout.requestUpdate(), 1000);
  */
 class SimpleLayout extends LitElement {
-  static get styles() {
-    return css`
-      :host {
-        display: block;
-        min-height: 100vh;
-      }
-
-      :host > div {
-        padding: 20px;
-      }
-
-      sw-infos-button {
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        z-index: 1001;
-      }
-
-      sw-credits {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        z-index: 1000;
-        width: 100vw;
-      }
-    `;
-  }
-
   constructor() {
     super();
 
@@ -53,6 +25,11 @@ class SimpleLayout extends LitElement {
     this._components = new Set();
 
     this._showCredits = false;
+  }
+
+  // no shadow DOM
+  createRenderRoot() {
+    return this;
   }
 
   // comp is anything that have a render method
@@ -100,3 +77,4 @@ export default function createLayout(client, $container) {
 
   return $layout;
 }
+

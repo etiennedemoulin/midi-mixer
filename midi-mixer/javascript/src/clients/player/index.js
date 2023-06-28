@@ -5,9 +5,11 @@ import filesystemPlugin from '@soundworks/plugin-filesystem/client.js';
 
 import { html } from 'lit';
 import createLayout from './views/layout.js';
-import { renderEmptyTrack, renderTrack, renderParams} from './views/components.js';
+import './views/MixerMain.js';
+import './views/MixerTracks.js';
 
-import { removeFromArray } from './arrayHelper.js';
+
+// import { removeFromArray } from './utils.js';
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -41,26 +43,13 @@ async function main($container) {
 
   const filesystem = await client.pluginManager.get('filesystem');
 
-  const $layout = createLayout(client, $container);
-
   const tracks = await client.stateManager.getCollection('track');
   const globals = await client.stateManager.attach('globals');
 
-  tracks.onUpdate(() => $layout.requestUpdate());
-  tracks.onAttach(() => $layout.requestUpdate());
-  tracks.onDetach(() => $layout.requestUpdate());
+  const $layout = createLayout(client, $container);
 
-  $layout.addComponent(renderParams(globals, filesystem));
-  $layout.addComponent({
-    render: () => {
-      return tracks.map(track => {
-        return track.get('disabled') ? renderEmptyTrack(track) : renderTrack(track);
-      });
-    },
-  });
-
-
-
+  $layout.addComponent(html`<mixer-main .globals=${globals} .filesystem=${filesystem}></mixer-main>`);
+  $layout.addComponent(html`<mixer-tracks style="margin-top: 50px;" .tracks=${tracks}></mixer-tracks>`);
 }
 
 // The launcher enables instanciation of multiple clients in the same page to
