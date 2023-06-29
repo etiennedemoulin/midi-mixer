@@ -46,19 +46,32 @@ server.pluginManager.register('filesystem', filesystemPlugin, {
   dirname: 'midi-config',
 });
 
+// register schemas
+server.stateManager.registerSchema('track', trackSchema);
+server.stateManager.registerSchema('globals', globalsSchema);
+
 await server.start();
+
+const filesystem = await server.pluginManager.get('filesystem');
+
+const controllersFolder = fs.readdirSync(path.resolve(process.cwd(),'./src/server/controllers'));
+const selectControllers = controllersFolder.map(e => e.split('.').shift());
+// register globals
+const globals = await server.stateManager.create('globals', {
+  selectControllers: selectControllers,
+  controllerName: selectControllers[0],
+  configFilename: filesystem.getTree().children[0],
+});
+
+// initialise controllers
+let controllerFader; // what is this ?
 
 // Create an osc UDP Port listening on port 3333.
 const oscServer = new OscServer(3333, '0.0.0.0', () => {
   console.log('OSC Server is listening on 3333');
 });
 
-// register tracks
-server.stateManager.registerSchema('track', trackSchema);
-server.stateManager.registerSchema('globals', globalsSchema);
-// register globals
-const globals = await server.stateManager.create('globals');
-
+// --------------------------------- move to it's own file
 // initialise midi lib
 let midiInPort;
 let midiOutPort;
@@ -90,6 +103,8 @@ JZZ().and(function() {
 
 const logger = JZZ.Widget({ _receive: onMidiReceive });
 
+// ---------------------------------
+
 globals.onUpdate(async (updates, oldValues, context) => {
   if ('midiInName' in updates) {
     let name = updates.midiInName;
@@ -98,42 +113,35 @@ globals.onUpdate(async (updates, oldValues, context) => {
     }
     const input = JZZ().openMidiIn(name).or(onMidiInFail).and(onMidiInSuccess);
     input.connect(logger);
-  };
+  }
+
   if ('midiOutName' in updates) {
     let name = updates.midiOutName;
     if (name === null) {
       name = updates.selectMidiOut[0]
     }
     JZZ().openMidiOut(name).or(onMidiOutFail).and(onMidiOutSuccess);
-  };
-  if (updates.controllerName) {
+  }
+
+  if ('controllerName' in updates) {
     const { fader } = await import (`./controllers/${updates.controllerName}.js`);
     controllerFader = fader;
     console.log(`- Updated controller ${updates.controllerName}`);
-  };
+  }
+
+  if ('configFilename' in updates) {
+    updateTracks();
+  }
 }, true);
 
 // _____________________
 
-// initialise controllers
-let controllerFader;
-const controllersFolder = fs.readdirSync(path.resolve(process.cwd(),'./src/server/controllers'));
-const selectControllers = [];
-controllersFolder.forEach(e => {
-  selectControllers.push(e.split('.').shift());
-});
-globals.set({ selectControllers: selectControllers });
-globals.set({ controllerName: selectControllers[0] });
-
-// grab config file an init states
-const filesystem = await server.pluginManager.get('filesystem');
-globals.set({ configFilename: filesystem.getTree().children[0] });
-
-filesystem.onUpdate(async updates => {
+async function updateTracks() {
+  console.log('++++ updates tracks');
   const tree = filesystem.getTree();
+
   const configFilename = globals.get('configFilename').path;
   const midiConfig = JSON5.parse(fs.readFileSync(configFilename));
-
   globals.set({ config: midiConfig });
 
   const channels = midiConfig
@@ -200,17 +208,18 @@ filesystem.onUpdate(async updates => {
     console.log(`update channel ${track.get('channel')}`);
     const midiConfigLine = midiConfig.find(f => f.channel === channel);
     const updates = parseTrackConfig(midiConfigLine);
-    await track.set(updates, {source:'config'});
+    await track.set(updates, { source:'config' });
 
     nameMaxTrack(track);
 
   });
+}
 
-}, true);
-// ________________________________
+filesystem.onUpdate(updateTracks, true);
+
+// --------------------------------
 // hook
-// ________________________________
-
+// --------------------------------
 server.stateManager.registerUpdateHook('track', async (updates, currentValues, context) => {
   // hook compute each fader values
   if (context.source !== 'hook') {

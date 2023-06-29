@@ -1,11 +1,6 @@
 [
   {
     channel: 1,
-    name: 'midi-1',
-    type: 'volume',
-  },
-  {
-    channel: 2,
     name: 'midi-2',
     type: 'linear',
     range: [

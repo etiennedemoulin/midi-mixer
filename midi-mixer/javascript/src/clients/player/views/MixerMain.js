@@ -24,8 +24,17 @@ class MixerMain extends LitElement {
       margin-bottom: 4px;
     }
 
+    .config {
+      display: flex;
+    }
+
     sc-editor {
-      width: 100%;
+      width: calc(100% - 200px);
+    }
+
+    sc-file-tree {
+      /* cannot do that for now, needs update */
+      /* width: 200px; */
     }
   `;
 
@@ -69,11 +78,12 @@ class MixerMain extends LitElement {
       </div>
       <div class="config">
         <sc-editor
-          value="${JSON5.stringify(this.globals.get('config'), null, 2)}"
-          @change=${e => this.filesystem.writeFile(globals.get('configFilename').name, e.detail.value)}
+          .value="${JSON5.stringify(this.globals.get('config'), null, 2)}"
+          @change=${e => this.filesystem.writeFile(this.globals.get('configFilename').name, e.detail.value)}
         ></sc-editor>
         <sc-file-tree
-          value="${this.filesystem.getTree()}"
+          width="200"
+          .value="${this.filesystem.getTree()}"
           @input=${e => this.globals.set({ configFilename: e.detail.value })}
         ></sc-file-tree>
       </div>

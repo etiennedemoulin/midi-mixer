@@ -70,7 +70,6 @@ class MixerTracks extends LitElement {
 
   render() {
     return this.tracks.map(track => {
-      console.log(track.getValues());
       return html`
         <div class="track ${track.get('disabled') ? 'disabled' : ''}">
           <p>channel: ${track.get('channel')}</p>
