@@ -127,11 +127,12 @@ globals.set({ controllerName: selectControllers[0] });
 
 // grab config file an init states
 const filesystem = await server.pluginManager.get('filesystem');
+globals.set({ configFilename: filesystem.getTree().children[0] });
 
 filesystem.onUpdate(async updates => {
   const tree = filesystem.getTree();
-  const midiConfigFilename = tree.children.find(f => f.name === 'example-1.json').path;
-  const midiConfig = JSON5.parse(fs.readFileSync(midiConfigFilename));
+  const configFilename = globals.get('configFilename').path;
+  const midiConfig = JSON5.parse(fs.readFileSync(configFilename));
 
   globals.set({ config: midiConfig });
 
@@ -258,9 +259,7 @@ function onTrackUpdate(newValues, oldValues, context, track) {
     );
 
     const oscClient = new OscClient('127.0.0.1', 3334);
-    oscClient.send(bundle, () => {
-      oscClient.close();
-    });
+    oscClient.send(bundle, () => oscClient.close());
   }
 }
 
@@ -287,9 +286,12 @@ oscServer.on('message', function (msg) {
       }
     }
   } else if (header === 'config') {
-    tracks.forEach(track => {
-      dumpMaxTrack(track);
-    });
+    const command = address[1];
+    if (command === 'replace') {
+      console.log("copy content from " + msg[1] + " to " + process.cwd() + "/" + "midi-config/osc.json");
+    } else if (command === 'set') {
+      console.log(`set osc.json as current config file`);
+    }
   }
 });
 
@@ -328,4 +330,5 @@ function onMidiReceive(msg) {
   console.log(msg.toString());
 }
 
-
+const oscClient = new OscClient('127.0.0.1', 3334);
+oscClient.send(new Bundle(['/ready', 0]), () => oscClient.close());

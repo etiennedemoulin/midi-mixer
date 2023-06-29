@@ -2,8 +2,9 @@ const path = require('path');
 const open = require('open');
 const JSON5 = require('json5');
 const Max = require('max-api');
-const { Client, Server } = require('node-osc');
+const { Client, Server, Bundle } = require('node-osc');
 const { fork } = require('child_process');
+const fs = require('fs-extra');
 
 let configFilename = null;
 let cwd = null;
@@ -16,8 +17,6 @@ let pos = 0;
 Max.addHandlers({
   [Max.MESSAGE_TYPES.ALL]: (handled, ...args) => onMessage(...args),
   edit: (filename) => open(configFilename),
-  getPorts: () => _getPorts(),
-  getDevices: () => _getDevices(),
   init: (name, patchPath, patchIndex) => init(name, patchPath, patchIndex),
 });
 
@@ -92,7 +91,17 @@ server.on('bundle', async (msg) => {
           await Max.outlet('update bang');
         }
       }
-    }
+    } else if (trackFlag === 'ready') {
+      if (configFilename !== 0 && fs.existsSync(configFilename)) {
+        const client = new Client('127.0.0.1', 3333);
+        client.send('/config/replace', configFilename);
+        client.send('/config/set', 'osc.json', () => client.close());
+        fs.watchFile(configFilename, () => {
+          const client = new Client('127.0.0.1', 3333);
+          client.send(`/config/replace`, configFilename, () => client.close());
+        });
+      };
+    };
   });
 });
 
@@ -144,10 +153,9 @@ function generateLink(varNameOut, outlet, varNameIn, inlet) {
 
 // Init when Max is ready
 async function init(name, patchPath, patchIndex) {
-  // patchIndex is #0
-  // patchPath is the path of the max patch
-  // name is config file name
-  // here we need to create a folder
+  // patchIndex (global)
+  // patchPath is saved into cwd (globals)
+  // name is saved into configFilename (globals)
   patchIndex = patchIndex;
   if (patchPath === '') {
     cwd = process.cwd();
@@ -171,6 +179,12 @@ async function init(name, patchPath, patchIndex) {
   });
 
   existingBoxes.list = [];
+
+  if (name === 0) {
+    configFilename = 0;
+  } else {
+    configFilename = path.join(cwd, name);
+  }
 
 };
 

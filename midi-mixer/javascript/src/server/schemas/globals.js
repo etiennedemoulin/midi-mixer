@@ -40,4 +40,9 @@ export const globalsSchema = {
     default: null,
     nullable: true,
   },
+  configFilename: {
+    type: 'any',
+    default: null,
+    nullable: true,
+  }
 };

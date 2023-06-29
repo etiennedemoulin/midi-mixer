@@ -4,6 +4,7 @@ import JSON5 from 'json5';
 import '@ircam/sc-components/sc-text.js';
 import '@ircam/sc-components/sc-select.js';
 import '@ircam/sc-components/sc-editor.js';
+import '@ircam/sc-components/sc-file-tree.js';
 
 class MixerMain extends LitElement {
   static styles = css`
@@ -69,8 +70,12 @@ class MixerMain extends LitElement {
       <div class="config">
         <sc-editor
           value="${JSON5.stringify(this.globals.get('config'), null, 2)}"
-          @change=${e => this.filesystem.writeFile('example-1.json', e.detail.value)}
+          @change=${e => this.filesystem.writeFile(globals.get('configFilename').name, e.detail.value)}
         ></sc-editor>
+        <sc-file-tree
+          value="${this.filesystem.getTree()}"
+          @input=${e => this.globals.set({ configFilename: e.detail.value })}
+        ></sc-file-tree>
       </div>
     `
   }
