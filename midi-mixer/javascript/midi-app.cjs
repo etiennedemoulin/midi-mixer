@@ -18,7 +18,7 @@ Max.addHandlers({
   edit: (filename) => open(configFilename),
   getPorts: () => _getPorts(),
   getDevices: () => _getDevices(),
-  init: (name, patchPath, patchIndex, midiDevice, controller) => init(name, patchPath, patchIndex, midiDevice, controller),
+  init: (name, patchPath, patchIndex) => init(name, patchPath, patchIndex),
 });
 
 // START SOUNDWORKS
@@ -143,7 +143,11 @@ function generateLink(varNameOut, outlet, varNameIn, inlet) {
 }
 
 // Init when Max is ready
-async function init(name, patchPath, patchIndex, midiDevice, controller) {
+async function init(name, patchPath, patchIndex) {
+  // patchIndex is #0
+  // patchPath is the path of the max patch
+  // name is config file name
+  // here we need to create a folder
   patchIndex = patchIndex;
   if (patchPath === '') {
     cwd = process.cwd();

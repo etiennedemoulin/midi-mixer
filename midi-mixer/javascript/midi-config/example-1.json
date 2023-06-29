@@ -9,8 +9,8 @@
     name: 'midi-2',
     type: 'linear',
     range: [
-      0,
-      127,
+      10,
+      1,
     ],
   },
   {
@@ -28,7 +28,7 @@
     type: 'volume',
   },
   {
-    channel: 7,
+    channel: 10,
     name: 'coucou',
     type: 'volume',
   },
