@@ -5,7 +5,7 @@ import filesystemPlugin from '@soundworks/plugin-filesystem/server.js';
 import { loadConfig } from '../utils/load-config.js';
 import '../utils/catch-unhandled-errors.js';
 
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
 
 import JZZ from 'jzz';
@@ -263,7 +263,7 @@ function onTrackUpdate(newValues, oldValues, context, track) {
   }
 }
 
-oscServer.on('message', function (msg) {
+oscServer.on('message', async function (msg) {
   const address = msg[0].split('/');
   address.shift();
   const header = address[0];
@@ -288,9 +288,13 @@ oscServer.on('message', function (msg) {
   } else if (header === 'config') {
     const command = address[1];
     if (command === 'replace') {
-      console.log("copy content from " + msg[1] + " to " + process.cwd() + "/" + "midi-config/osc.json");
-    } else if (command === 'set') {
-      console.log(`set osc.json as current config file`);
+      await fs.remove(`${process.cwd()}/midi-config/osc.json`);
+      await fs.symlink(msg[1], `${process.cwd()}/midi-config/osc.json`);
+      console.log("ask benjamin why we can't see the osc.json file in the filesystem.tree here");
+      if (globals.get('configFilename').name !== 'osc.json') {
+        const configFilename = { path: 'midi-config/osc.json', name: 'osc.json' }
+        globals.set({ configFilename: configFilename })
+      }
     }
   }
 });

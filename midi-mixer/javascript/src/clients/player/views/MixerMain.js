@@ -70,7 +70,7 @@ class MixerMain extends LitElement {
       <div class="config">
         <sc-editor
           value="${JSON5.stringify(this.globals.get('config'), null, 2)}"
-          @change=${e => this.filesystem.writeFile(globals.get('configFilename').name, e.detail.value)}
+          @change=${e => this.filesystem.writeFile(this.globals.get('configFilename').name, e.detail.value)}
         ></sc-editor>
         <sc-file-tree
           value="${this.filesystem.getTree()}"

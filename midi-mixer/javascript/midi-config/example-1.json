@@ -28,8 +28,8 @@
     type: 'volume',
   },
   {
-    channel: 10,
-    name: 'coucou',
+    channel: 5,
+    name: 'pouet',
     type: 'volume',
   },
 ]

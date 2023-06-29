@@ -94,12 +94,7 @@ server.on('bundle', async (msg) => {
     } else if (trackFlag === 'ready') {
       if (configFilename !== 0 && fs.existsSync(configFilename)) {
         const client = new Client('127.0.0.1', 3333);
-        client.send('/config/replace', configFilename);
-        client.send('/config/set', 'osc.json', () => client.close());
-        fs.watchFile(configFilename, () => {
-          const client = new Client('127.0.0.1', 3333);
-          client.send(`/config/replace`, configFilename, () => client.close());
-        });
+        client.send('/config/replace', configFilename, () => client.close());
       };
     };
   });
