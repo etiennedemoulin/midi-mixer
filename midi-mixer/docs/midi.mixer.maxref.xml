@@ -50,22 +50,6 @@
 				Open editor for the configuration file.
 			</description>
 		</method>
-		<method name="getPorts">
-			<digest>
-				Log available midi input device into Max Console
-			</digest>
-			<description>
-				Log available midi input device into Max Console
-			</description>
-		</method>
-		<method name="getDevices">
-			<digest>
-				Log available midi mapping table into Max Console
-			</digest>
-			<description>
-				Log available midi mapping table into Max Console. Midi Mapping Table is used for volume mapping. Add your own into the Controllers directory.
-			</description>
-		</method>
 	</methodlist>
 
 	<!--ATTRIBUTES-->
@@ -77,7 +61,7 @@
             <description>Send getPorts to log available midi input device into Max Console.</description>
         </attribute>
 
-        <attribute name='device' get='0' set='1' type='symbol' size='1' >
+        <attribute name='controller' get='0' set='1' type='symbol' size='1' >
             <digest>Midi Mapping Table</digest>
             <description>Send getDevices to log available midi mapping table into Max Console. Midi Mapping Table is used for volume mapping. Add your own into the Controllers directory.</description>
         </attribute>

@@ -11,13 +11,15 @@ let cwd = null;
 let patchPath = null;
 let boxesDictName = null;
 let patchIndex = null;
+let port = null;
+let controller = null;
 let config = [];
 let pos = 0;
 
 Max.addHandlers({
   [Max.MESSAGE_TYPES.ALL]: (handled, ...args) => onMessage(...args),
-  edit: (filename) => open(configFilename),
-  init: (name, patchPath, patchIndex) => init(name, patchPath, patchIndex),
+  edit: () => { if (configFilename) { open(configFilename) }},
+  init: (name, patchPath, patchIndex, receivedPort, receivedController) => init(name, patchPath, patchIndex, receivedPort, receivedController),
 });
 
 // START SOUNDWORKS
@@ -94,8 +96,16 @@ server.on('bundle', async (msg) => {
     } else if (trackFlag === 'ready') {
       if (configFilename !== 0 && fs.existsSync(configFilename)) {
         const client = new Client('127.0.0.1', 3333);
-        client.send('/config/replace', configFilename, () => client.close());
+        client.send('/config/filename', configFilename, () => client.close());
       };
+      if (port) {
+        const client = new Client('127.0.0.1', 3333);
+        client.send('/config/port', port, () => client.close());
+      }
+      if (controller) {
+        const client = new Client('127.0.0.1', 3333);
+        client.send('/config/controller', controller, () => client.close());
+      }
     };
   });
 });
@@ -147,7 +157,7 @@ function generateLink(varNameOut, outlet, varNameIn, inlet) {
 }
 
 // Init when Max is ready
-async function init(name, patchPath, patchIndex) {
+async function init(name, patchPath, patchIndex, receivedPort, receivedController) {
   // patchIndex (global)
   // patchPath is saved into cwd (globals)
   // name is saved into configFilename (globals)
@@ -175,10 +185,16 @@ async function init(name, patchPath, patchIndex) {
 
   existingBoxes.list = [];
 
-  if (name === 0) {
-    configFilename = 0;
-  } else {
+  if (name !== 0) {
     configFilename = path.join(cwd, name);
+  }
+
+  if (receivedPort !== 0) {
+    port = receivedPort;
+  };
+
+  if (receivedController !== 0) {
+    controller = receivedController;
   }
 
 };

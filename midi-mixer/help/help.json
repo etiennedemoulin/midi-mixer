@@ -1,22 +1,48 @@
-{
-  '1': { patch:"pouet", name:"pouet", type:'linear', range: [0, 1]},
-  '2': { patch:"L1_lvl", name:"L1", type:'volume'},
-  '3': { patch:"toto", name:"toto", type:'volume'},
-  // '3': { patch:"L2_lvl", name:"L2", type:'volume'},
-  '4': { patch:"L3_lvl", name:"L3", type:'volume'},
-  '5': { patch:"L4_lvl", name:"L4", type:'volume'},
-  // '7': { patch:"tr_lvl", name:"TR", type:'volume'},
-  // '8': { patch:"rev_lvl", name:"REV", type:'volume'},
-  '9': { patch:"reverse", name:"reverse", type:'linear', range: [10, 2]},
-  // '1': { patch:"spread", name:"SPREAD", type:'linear', range:[0, 1]},
-  '11': { patch:"mod", name:"MOD", type:'linear', range: [50, 100]},
-  '8': { patch:"master_lvl", name:"master", type:'volume'},
-}
-
-
-
-
-
+[
+  {
+    channel: 1,
+    name: "pouet",
+    type: 'linear',
+    range: [0, 1]
+  },
+  {
+    channel: 2,
+    name: 'L1',
+    type: 'volume'
+  },
+  {
+    channel: 3,
+    name: 'toto',
+    type: 'volume'
+  },
+  {
+    channel: 4,
+    name: 'L3',
+    type: 'volume'
+  },
+  {
+    channel: 5,
+    name: "L4",
+    type: 'volume'
+  },
+  {
+    channel: 9,
+    name: 'reverse',
+    type: 'linear',
+    range: [10, 2]
+  },
+  {
+    channel: 11,
+    name: "MOD",
+    type: 'linear',
+    range: [50, 100]
+  },
+  {
+    channel: 8,
+    name: "master_lvl",
+    type: 'volume',
+  }
+]
 
 
 

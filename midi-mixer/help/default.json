@@ -1,12 +1,55 @@
-{
-  '1': { patch:"midi-1", name:"1", type:'volume' },
-  '2': { patch:"midi-2", name:"2", type:'linear', range: [0, 127] },
-  '3': { patch:"midi-3", name:"3", type:'linear', range: [0, 127] },
-  '5': { patch:"midi-5", name:"5", type:'linear', range: [0, 127] },
-  '6': { patch:"midi-6", name:"6", type:'linear', range: [0, 127] },
-  '7': { patch:"midi-7", name:"7", type:'linear', range: [0, 127] },
-  '8': { patch:"midi-8", name:"8", type:'volume' },
-  '9': { patch:"midi-9", name:"9", type:'volume' },
-  '24': { patch:"midi-24", name:"24", type:'volume' },
-  'MAIN': { patch:"master_lvl", name:"master", type:'volume' },
-}
+[
+  {
+    channel: 0,
+    name: "master_lvl",
+    type: "volume",
+  },
+  {
+    channel: 1,
+    name: "midi-1",
+    type: "linear",
+    range: [0, 127],
+  },
+  {
+    channel: 2,
+    name: "midi-2",
+    type: "linear",
+    range: [0, 127],
+  },
+  {
+    channel: 3,
+    name: "midi-3",
+    type: "linear",
+    range: [0, 127],
+  },
+  {
+    channel: 4,
+    name: "midi-4",
+    type: "linear",
+    range: [0, 127],
+  },
+  {
+    channel: 5,
+    name: "midi-5",
+    type: "linear",
+    range: [0, 127],
+  },
+  {
+    channel: 6,
+    name: "midi-6",
+    type: "linear",
+    range: [0, 127],
+  },
+  {
+    channel: 7,
+    name: "midi-7",
+    type: "linear",
+    range: [0, 127],
+  },
+  {
+    channel: 8,
+    name: "midi-8",
+    type: "linear",
+    range: [0, 127],
+  }
+]

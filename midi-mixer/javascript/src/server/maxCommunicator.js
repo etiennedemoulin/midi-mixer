@@ -6,7 +6,7 @@ export function removeMaxTrack(track) {
   const bundle = new Bundle([`/track/${channel}/remove`, 0]);
   const oscClient = new OscClient('127.0.0.1', 3334);
   oscClient.send(bundle, () => oscClient.close());
-  console.log(`* remove Max Track ${channel}`);
+  // console.log(`* remove Max Track ${channel}`);
 }
 
 export function createMaxTrack(track) {
@@ -14,7 +14,7 @@ export function createMaxTrack(track) {
   const bundle = new Bundle([`/track/${channel}}/create`, 0]);
   const oscClient = new OscClient('127.0.0.1', 3334);
   oscClient.send(bundle, () => oscClient.close());
-  console.log(`* create Max Track ${channel}`)
+  // console.log(`* create Max Track ${channel}`)
 }
 
 export function nameMaxTrack(track) {
@@ -23,7 +23,7 @@ export function nameMaxTrack(track) {
   const bundle = new Bundle([`/track/${channel}}/name`, name]);
   const oscClient = new OscClient('127.0.0.1', 3334);
   oscClient.send(bundle, () => oscClient.close());
-  console.log(`* name max track ${channel}`)
+  // console.log(`* name max track ${channel}`)
 }
 
 export function dumpMaxTrack(track) {

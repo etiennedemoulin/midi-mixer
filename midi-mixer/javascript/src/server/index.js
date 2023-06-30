@@ -64,7 +64,9 @@ const globals = await server.stateManager.create('globals', {
 });
 
 // initialise controllers
-let controllerFader; // what is this ?
+// this is globals variable for the transfert table of fader values
+// updated value on 235 and used as a table on 130
+let controllerFader;
 
 // Create an osc UDP Port listening on port 3333.
 const oscServer = new OscServer(3333, '0.0.0.0', () => {
@@ -137,7 +139,7 @@ globals.onUpdate(async (updates, oldValues, context) => {
 // _____________________
 
 async function updateTracks() {
-  console.log('++++ updates tracks');
+  // console.log('++++ updates tracks');
   const tree = filesystem.getTree();
 
   const configFilename = globals.get('configFilename').path;
@@ -151,7 +153,7 @@ async function updateTracks() {
   const maxTrackIndex = Math.max(...channels);
 
   if (maxTrackIndex + 1 > tracks.length) {
-    console.log(`- create track from ${tracks.length} to ${maxTrackIndex}`);
+    // console.log(`- create track from ${tracks.length} to ${maxTrackIndex}`);
     // create new states
     for (let i = tracks.length; i < maxTrackIndex + 1; i++) {
       tracks[i] = await server.stateManager.create('track');
@@ -178,7 +180,7 @@ async function updateTracks() {
 
     }
   } else {
-    console.log(`- delete track from ${maxTrackIndex + 1} to ${tracks.length - 1}`);
+    // console.log(`- delete track from ${maxTrackIndex + 1} to ${tracks.length - 1}`);
     for (let i = tracks.length - 1; i > maxTrackIndex; i--) {
       const track = tracks.find(s => s.get('channel') === i);
       // delete max track
@@ -193,7 +195,7 @@ async function updateTracks() {
     const channel = track.get('channel');
     if (track.get('disabled') === true) { return };
     if (!channels.includes(channel)) {
-      console.log('- disable track:', channel);
+      // console.log('- disable track:', channel);
       await track.set({
         name: null,
         disabled: true,
@@ -204,8 +206,8 @@ async function updateTracks() {
 
   // apply updates on changed state
   channels.forEach(async channel => {
+    // console.log(`update channel ${track.get('channel')}`);
     const track = tracks.find(s => s.get('channel') === channel);
-    console.log(`update channel ${track.get('channel')}`);
     const midiConfigLine = midiConfig.find(f => f.channel === channel);
     const updates = parseTrackConfig(midiConfigLine);
     await track.set(updates, { source:'config' });
@@ -296,13 +298,33 @@ oscServer.on('message', async function (msg) {
     }
   } else if (header === 'config') {
     const command = address[1];
-    if (command === 'replace') {
-      await fs.remove(`${process.cwd()}/midi-config/osc.json`);
-      await fs.symlink(msg[1], `${process.cwd()}/midi-config/osc.json`);
-      console.log("ask benjamin why we can't see the osc.json file in the filesystem.tree here");
-      if (globals.get('configFilename').name !== 'osc.json') {
-        const configFilename = { path: 'midi-config/osc.json', name: 'osc.json' }
+    if (command === 'filename') {
+      const sourcePath = msg[1];
+      const filename = sourcePath.split('/').slice(-1)[0];
+      const destPath = path.join(process.cwd(), `./midi-config/linked/${filename}`);
+      await fs.remove(destPath);
+      await fs.symlink(sourcePath, destPath);
+      if (globals.get('configFilename').name !== filename) {
+        const configFilename = { path: `midi-config/linked/${filename}`, name: filename }
         globals.set({ configFilename: configFilename })
+      }
+    } else if (command === 'port') {
+      // make sure received port is in selectMidiIn list and in selectMidiOut list !
+      const selectMidiIn = globals.get('selectMidiIn');
+      const selectMidiOut = globals.get('selectMidiOut');
+      const receivedPort = msg[1];
+      if (selectMidiIn.find(e => e === receivedPort) !== -1
+        && selectMidiOut.find(e => e === receivedPort)) {
+        globals.set({
+          midiInName: receivedPort,
+          midiOutName: receivedPort
+         });
+      }
+    } else if (command === 'controller') {
+      const selectControllers = globals.get('selectControllers');
+      const receivedController = msg[1];
+      if (selectControllers.find(e => e === receivedController) !== 1) {
+        globals.set({ controllerName: receivedController});
       }
     }
   }

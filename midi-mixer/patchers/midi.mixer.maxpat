@@ -1940,13 +1940,12 @@
 , 			{
 				"box" : 				{
 					"id" : "obj-70",
-					"linecount" : 3,
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 2,
 					"outlettype" : [ "", "" ],
-					"patching_rect" : [ 348.0, 217.0, 103.0, 49.0 ],
-					"text" : "patcherargs @port \"to Max 1\" @device mackie"
+					"patching_rect" : [ 348.0, 217.0, 193.0, 22.0 ],
+					"text" : "patcherargs @port 0 @controller 0"
 				}
 
 			}
@@ -1965,7 +1964,7 @@
 , 			{
 				"box" : 				{
 					"data" : 					{
-						"list" : [ "receive-midi-1", "set-midi-1", "numbox-midi-1", "prepend-midi-1", "send-midi-1", "receive-midi-2", "set-midi-2", "numbox-midi-2", "prepend-midi-2", "send-midi-2", "receive-midi-3", "set-midi-3", "numbox-midi-3", "prepend-midi-3", "send-midi-3", "receive-master", "set-master", "numbox-master", "prepend-master", "send-master", "receive-main-fader", "set-main-fader", "numbox-main-fader", "prepend-main-fader", "send-main-fader" ]
+						"list" : [ "receive-midi-1", "prepend-midi-1", "send-midi-1", "receive-midi-2", "prepend-midi-2", "send-midi-2", "receive-midi-3", "prepend-midi-3", "send-midi-3", "receive-midi-6", "prepend-midi-6", "send-midi-6", "receive-coucou", "prepend-coucou", "send-coucou", "receive-tototo", "prepend-tototo", "send-tototo" ]
 					}
 ,
 					"id" : "obj-64",
@@ -2168,8 +2167,8 @@
 									"numinlets" : 3,
 									"numoutlets" : 3,
 									"outlettype" : [ "", "", "" ],
-									"patching_rect" : [ 206.0, 479.75, 98.0, 22.0 ],
-									"text" : "route port device"
+									"patching_rect" : [ 206.0, 479.75, 113.0, 22.0 ],
+									"text" : "route port controller"
 								}
 
 							}
@@ -2265,12 +2264,12 @@
 , 							{
 								"box" : 								{
 									"id" : "obj-22",
-									"linecount" : 3,
+									"linecount" : 2,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 218.0, 589.0, 253.0, 47.0 ],
-									"text" : "init <configFileName> <patcherPath> <instanceNumber> <midiPort> <midiControllerMapping>"
+									"patching_rect" : [ 218.0, 589.0, 253.0, 33.0 ],
+									"text" : "init <configFileName> <patcherPath> <instanceNumber> <port> <controller>"
 								}
 
 							}
@@ -3080,10 +3079,52 @@
 					"saved_object_attributes" : 					{
 						"autostart" : 1,
 						"defer" : 0,
+						"node_bin_path" : "",
+						"npm_bin_path" : "",
 						"watch" : 1
 					}
 ,
 					"text" : "node.script midi-app.cjs @autostart 1 @watch 1"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-23",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1080.0, 400.0, 100.0, 22.0 ],
+					"presentation" : 1,
+					"presentation_rect" : [ 60.0, 130.0, 100.0, 22.0 ],
+					"text" : "receive tototo",
+					"varname" : "receive-tototo"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-24",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1080.0, 430.0, 100.0, 22.0 ],
+					"text" : "prepend tototo",
+					"varname" : "prepend-tototo"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-26",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 1080.0, 460.0, 100.0, 22.0 ],
+					"text" : "send #0_node",
+					"varname" : "send-tototo"
 				}
 
 			}
@@ -3180,6 +3221,20 @@
 				"patchline" : 				{
 					"destination" : [ "obj-68", 0 ],
 					"source" : [ "obj-218", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-24", 0 ],
+					"source" : [ "obj-23", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-26", 0 ],
+					"source" : [ "obj-24", 0 ]
 				}
 
 			}
