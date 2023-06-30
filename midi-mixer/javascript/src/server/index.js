@@ -212,6 +212,20 @@ async function updateTracks() {
     const updates = parseTrackConfig(midiConfigLine);
     await track.set(updates, { source:'config' });
 
+    if ([undefined, -Infinity, null].includes(midiConfigLine.default)) {
+      if (midiConfigLine.type === 'volume') {
+        if (controllerFader) {
+          await track.set({ faderUser: controllerFader[0] }, { source:'config' });
+        } else {
+          return;
+        }
+      } else {
+        await track.set({ faderUser: updates.faderRange[0][0] }, { source:'config' });
+      }
+    } else {
+      await track.set({ faderUser: midiConfigLine.default }, { source:'config' });
+    }
+
     nameMaxTrack(track);
 
   });
@@ -225,6 +239,7 @@ filesystem.onUpdate(updateTracks, true);
 server.stateManager.registerUpdateHook('track', async (updates, currentValues, context) => {
   // hook compute each fader values
   if (context.source !== 'hook') {
+    // will be updated only if 1st entry in updates, please be careful
     const key = Object.keys(updates)[0];
     const input = updates[key];
     const id = currentValues.id;

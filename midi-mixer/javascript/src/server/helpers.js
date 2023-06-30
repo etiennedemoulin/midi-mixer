@@ -1,6 +1,9 @@
 import fs from 'fs';
 
 function dBtoRaw(dB, transfertTable) {
+  if (dB === -Infinity) {
+    dB = transfertTable[0]
+  }
   const nearestdB = transfertTable.reduce((a, b) => {
     return Math.abs(b - dB) < Math.abs(a - dB) ? b : a;
   });
@@ -30,29 +33,37 @@ function linToRaw(lin, range) {
 
 export function rawToUser(raw, transfertTable, currentValues) {
   // currentValues.faderType is volume or linear - possibly expand to exponential, polynomial, logarithmic
-  switch (currentValues.faderType) {
-  case 'volume':
-    return rawtodB(raw, transfertTable);
-    break;
-  case 'linear':
-    return rawtoLin(raw, currentValues.faderRange[0]);
-    break;
-  default:
-    throw new Error(`${currentValues.faderType} is not defined`);
+  if (!transfertTable) {
+    return null;
+  } else {
+    switch (currentValues.faderType) {
+    case 'volume':
+      return rawtodB(raw, transfertTable);
+      break;
+    case 'linear':
+      return rawtoLin(raw, currentValues.faderRange[0]);
+      break;
+    default:
+      throw new Error(`${currentValues.faderType} is not defined`);
+    }
   }
 }
 
 export function userToRaw(raw, transfertTable, currentValues) {
   // currentValues.faderType is volume or linear - possibly expand to exponential, polynomial, logarithmic
-  switch (currentValues.faderType) {
-  case 'volume':
-    return dBtoRaw(raw, transfertTable);
-    break;
-  case 'linear':
-    return linToRaw(raw, currentValues.faderRange[0]);
-    break;
-  default:
-    throw new Error(`${currentValues.faderType} is not defined`);
+  if (!transfertTable) {
+    return null;
+  } else {
+    switch (currentValues.faderType) {
+    case 'volume':
+      return dBtoRaw(raw, transfertTable);
+      break;
+    case 'linear':
+      return linToRaw(raw, currentValues.faderRange[0]);
+      break;
+    default:
+      throw new Error(`${currentValues.faderType} is not defined`);
+    }
   }
 }
 
@@ -75,7 +86,6 @@ export function getFaderRange(config) {
 
 export function parseTrackConfig(config) {
   const range = getFaderRange(config);
-
   return {
     channel: config.channel,
     disabled: false,

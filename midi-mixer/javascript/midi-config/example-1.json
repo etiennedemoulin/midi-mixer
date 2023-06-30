@@ -3,11 +3,13 @@
     channel: 1,
     name: 'midi-1',
     type: 'volume',
+    default: -Infinity,
   },
   {
     channel: 2,
     name: 'midi-2',
     type: 'linear',
+    default: 5,
     range: [
       10,
       1,
@@ -18,14 +20,15 @@
     name: 'midi-3',
     type: 'linear',
     range: [
+      -10,
       10,
-      2,
     ],
   },
   {
     channel: 4,
     name: 'midi-6',
     type: 'volume',
+    default: 0,
   },
   {
     channel: 5,
