@@ -73,6 +73,7 @@ class MixerTracks extends LitElement {
       return html`
         <div class="track ${track.get('disabled') ? 'disabled' : ''}">
           <p>channel: ${track.get('channel')}</p>
+          <p>touched: ${track.get('faderTouched')}</p>
           <p class="name">${track.get('name') ? track.get('name') : '...'}</p>
           <sc-slider
             ?disabled=${track.get('disabled')}

@@ -17,12 +17,13 @@ export const globalsSchema = {
   },
   midiInName: {
     type: 'string',
-    default: null,
+    // default: null,
+    default: "mioXM HST 1",
     nullable: true,
   },
   midiOutName: {
     type: 'string',
-    default: null,
+    default: "mioXM HST 1",
     nullable: true,
   },
   selectControllers: {

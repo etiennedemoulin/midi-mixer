@@ -49,22 +49,37 @@ export function rawToUser(raw, transfertTable, currentValues) {
   }
 }
 
-export function userToRaw(raw, transfertTable, currentValues) {
+export function userToRaw(user, transfertTable, currentValues) {
   // currentValues.faderType is volume or linear - possibly expand to exponential, polynomial, logarithmic
   if (!transfertTable) {
     return null;
   } else {
     switch (currentValues.faderType) {
     case 'volume':
-      return dBtoRaw(raw, transfertTable);
+      return dBtoRaw(user, transfertTable);
       break;
     case 'linear':
-      return linToRaw(raw, currentValues.faderRange[0]);
+      return linToRaw(user, currentValues.faderRange[0]);
       break;
     default:
       throw new Error(`${currentValues.faderType} is not defined`);
     }
   }
+}
+
+export function rawToBytes(raw) {
+  const decimal = parseInt(raw * (Math.pow(2,14) - 1));
+  const msb = decimal >> 7;
+  const lsb = decimal & 0b00000001111111;
+  return [msb, lsb];
+}
+
+export function bytesToRaw(bytes) {
+  const msb = bytes[0];
+  const lsb = bytes[1];
+  const decimal = (msb << 7 | lsb);
+  const raw = decimal / (Math.pow(2, 14) - 1);
+  return raw;
 }
 
 // return range and normalized range (dans le bon sens..).

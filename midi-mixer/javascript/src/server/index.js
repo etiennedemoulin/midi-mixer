@@ -14,10 +14,10 @@ import { Server as OscServer, Client as OscClient, Bundle } from 'node-osc';
 import _ from 'lodash';
 import JSON5 from 'json5';
 
-import { userToRaw, rawToUser, getFaderRange, parseTrackConfig } from './helpers.js';
+import { userToRaw, rawToUser, getFaderRange, parseTrackConfig, rawToBytes, bytesToRaw } from './helpers.js';
 import { trackSchema } from './schemas/tracks.js';
 import { globalsSchema } from './schemas/globals.js';
-import { onMidiOutFail, onMidiInFail, getMidiDeviceList, onFaderMove, displayUserFader, setFaderView, setMixerView } from './midi.js';
+import { onMidiOutFail, onMidiInFail, getMidiDeviceList, onFaderMove, displayUserFader, setFaderView, setMixerView } from './midiCommunicator.js';
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -103,8 +103,6 @@ JZZ().and(function() {
   getMidiDeviceList(info, globals);
 });
 
-const logger = JZZ.Widget({ _receive: onMidiReceive });
-
 // ---------------------------------
 
 globals.onUpdate(async (updates, oldValues, context) => {
@@ -113,8 +111,8 @@ globals.onUpdate(async (updates, oldValues, context) => {
     if (name === null) {
       name = updates.selectMidiIn[0]
     }
-    const input = JZZ().openMidiIn(name).or(onMidiInFail).and(onMidiInSuccess);
-    input.connect(logger);
+    JZZ().openMidiIn(name).or(onMidiInFail).and(onMidiInSuccess);
+    midiInPort.connect(JZZ.Widget({ _receive: onMidiReceive }));
   }
 
   if ('midiOutName' in updates) {
@@ -249,14 +247,14 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
 
     if (key === 'faderRaw') {
       user = rawToUser(input, controllerFader, currentValues);
-      bytes = parseInt(input * (Math.pow(2,14) - 1));
+      bytes = rawToBytes(input);
       raw = input;
     } else if (key === 'faderUser') {
       raw = userToRaw(input, controllerFader, currentValues);
-      bytes = parseInt(raw * (Math.pow(2,14) - 1));
+      bytes = rawToBytes(raw);
       user = input;
     } else if (key === 'faderBytes') {
-      raw = input / (Math.pow(2, 14) - 1);
+      raw = bytesToRaw(input);
       user = rawToUser(raw, controllerFader, currentValues);
       bytes = input;
     }
@@ -287,7 +285,19 @@ function onTrackUpdate(newValues, oldValues, context, track) {
     const oscClient = new OscClient('127.0.0.1', 3334);
     oscClient.send(bundle, () => oscClient.close());
   }
+  if (context.source === 'midi') {
+    if (track.get('faderTouched') === false) {
+      // send fader value on release
+      const channel = track.get('channel') + 223;
+      const bytes = track.get('faderBytes');
+      // midiOutPort.pitchBend(channel, 0, 0)
+      // console.log(channel, bytes);
+      // console.log(midiOutPort.get);
+      midiOutPort.send([channel, bytes[1], bytes[0]])
+    }
+  }
 }
+
 
 oscServer.on('message', async function (msg) {
   const address = msg[0].split('/');
@@ -377,7 +387,31 @@ oscServer.on('message', async function (msg) {
 // });
 
 function onMidiReceive(msg) {
-  console.log(msg.toString());
+  let faderBytes = null;
+  let faderTouched = null;
+  let channel = null;
+  // parse touched flag
+  if (msg.isNoteOn() || msg.isNoteOff()) {
+    channel = msg.getNote() - 103;
+    faderTouched = msg.getVelocity() > 0;
+  } else if ([224, 225, 226, 227, 228, 229, 230, 231].includes(msg[0])) {
+    channel = msg[0] - 223;
+    faderBytes = [msg[2], msg[1]]; // msb, lsb
+  }
+
+  const track = tracks.find(t => t.get('channel') === channel);
+
+  if (!faderBytes) {
+    faderBytes = track.get('faderBytes');
+  } else if (!faderTouched) {
+    faderTouched = track.get('faderTouched');
+  }
+
+  track.set({
+    faderBytes: faderBytes,
+    faderTouched: faderTouched
+  }, { source: 'midi' });
+
 }
 
 const oscClient = new OscClient('127.0.0.1', 3334);

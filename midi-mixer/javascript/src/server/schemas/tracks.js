@@ -20,10 +20,12 @@ export const trackSchema = {
     default: null,
     nullable: true,
   },
+  faderTouched:{
+    type: 'boolean',
+    default: false,
+  },
   faderBytes: {
-    type:'integer',
-    min:0,
-    max:16383,
+    type:'any',
     default:null,
     nullable: true,
   },

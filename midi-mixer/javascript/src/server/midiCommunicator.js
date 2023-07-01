@@ -130,3 +130,17 @@ function _displayUserFader(activePage, tracks) {
 }
 
 export const displayUserFader = _.throttle(_displayUserFader, 50, { 'trailing': true });
+
+
+
+
+// send display to MIDI
+// f0 00 00 66 14 12 38 20 20 20 20 20 20 20 20 20 20 20 20 20 20 2d 33 35 2e 37 30 20 2d 32 33 2e 36 35 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 f7
+
+
+// set decimal to msb/lsb
+    // const msb = value >> 7;
+    // const lsb = value & 0b00000001111111;
+
+
+//     let val = (msb << 7 | lsb);
