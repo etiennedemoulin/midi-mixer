@@ -26,7 +26,7 @@ export const trackSchema = {
   },
   faderBytes: {
     type:'any',
-    default:null,
+    default:[0, 0],
     nullable: true,
   },
   faderRaw: {

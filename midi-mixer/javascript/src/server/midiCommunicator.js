@@ -2,7 +2,7 @@ import JZZ from 'jzz';
 import _ from 'lodash';
 
 function log(str) {
-  //console.log(str);
+  console.log(str);
 }
 
 export function onMidiOutFail() {
@@ -52,20 +52,20 @@ function getValuesFromPage(activePage, faderUser) {
   return returnArray;
 }
 
+
 // total update : 8 faders + 2 displays
-export async function setMixerView(activePage, tracks) {
-  const tracksId = tracks.map(t => t.get('channel')).sort();
-  const lastBankId = Math.ceil((tracksId[tracksId.length - 1] / 8) * 8);
+export async function setMixerView(activePage, midiOutPort, tracks) {
+  const channels = tracks.map(t => t.get('channel')).sort();
+  // const lastBank = Math.ceil((channels[channels.length - 1] / 8) * 8);
 
   tracks.forEach(track => {
-    const absIndex = track.get('channel');
-    const relIndex = (absIndex - 1) % 8 + 1;
+    const absChannel = track.get('channel');
+    const relChannel = (absChannel - 1) % 8 + 1;
 
-    if (absIndex > (activePage * 8) && absIndex <= ((activePage + 1) * 8) && absIndex !== 0) {
-      if (track.get('channel') !== null) {
-        log(`> set fader CH${relIndex}: ${track.get('faderBytes')}`);
-      } else {
-        log(`> set fader CH${relIndex}: 0`);
+    if (absChannel > (activePage * 8) && absChannel <= ((activePage + 1) * 8) && absChannel !== 0) {
+      if (track.get('faderBytes') !== null) {
+        const faderBytes = track.get('faderBytes');
+        midiOutPort.send([relChannel + 223, faderBytes[1], faderBytes[0]]);
       }
     }
   });
@@ -77,50 +77,19 @@ export async function setMixerView(activePage, tracks) {
 
 }
 
-export function setFaderView(channel, activePage, tracks) {
+export function setFaderView(channel, activePage, tracks, midiOutPort) {
   // @todo send 'release' message when no moves
   const relIndex = (channel - 1) % 8 + 1;
-  const faderBytes = tracks.map(t => t.get('faderBytes'))[channel]; // retrieve track value
+  const track = tracks.find(t => t.get('channel') === channel);
+  const faderBytes = track.get('faderBytes');
 
-  if (relIndex + (activePage * 8) === channel) {
-    log(`> set fader CH${relIndex}: ${faderBytes}`);
-    displayUserFader(activePage, tracks);
-  } else if (channel === 0) {
-    log(`> set fader MAIN: ${faderBytes}`);
-  }
-}
-
-export async function onFaderMove(name, state, activePage, tracks) {
-  const relIndex = ['CH1', 'CH2', 'CH3', 'CH4', 'CH5', 'CH6', 'CH7', 'CH8'].findIndex(e => e === name);
-  const absIndex = (relIndex !== -1) ? (relIndex + 1 + activePage * 8) : 0;
-  const track = tracks.find(t => t.get('channel') === absIndex);
-  let value = null;
-
-  // handle unmapped faders
-  if (track === undefined) {
-    log(`> set fader ${name}: 0`);
-    return 0;
-  }
-
-
-  if (typeof state === 'number') {
-    // this fader move is not a touch / release event
-    value = state;
-  } else {
-    // this fader move is a touch / release event
-    value = track.get('faderBytes');
-  };
-
-  if (track !== undefined) {
-    track.set({
-      faderBytes: value
-    }, { source: 'midi' });
-  };
-
-  if (state === 'release') {
-    // do something on release
-  } else if (state === 'touch') {
-    // do something on touch
+  if (faderBytes) {
+    if (relIndex + (activePage * 8) === channel) {
+      midiOutPort.send([channel+223, faderBytes[1], faderBytes[0]])
+      displayUserFader(activePage, tracks);
+    } else if (channel === 0) {
+      log(`> set fader MAIN: ${faderBytes}`);
+    }
   }
 }
 
