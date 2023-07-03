@@ -8,12 +8,10 @@ function log(str) {
 
 export function onMidiOutFail() {
   throw new Error("> Error: fail opening midi out");
-  // process.exit();
 }
 
 export function onMidiInFail() {
   throw new Error("> Error: fail opening midi in");
-  // process.exit();
 }
 
 export function getMidiDeviceList() {

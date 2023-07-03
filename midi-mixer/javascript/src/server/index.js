@@ -138,8 +138,17 @@ async function updateTracks() {
   const tree = filesystem.getTree();
 
   const configFilename = globals.get('configFilename').path;
-  const midiConfig = JSON5.parse(fs.readFileSync(configFilename));
-  globals.set({ config: midiConfig });
+  const config = fs.readFileSync(configFilename).toString();
+  globals.set({ config });
+
+  let midiConfig;
+
+  try {
+    midiConfig = JSON5.parse(config);
+  } catch(err) {
+    console.log(err.message);
+    return;
+  }
 
   const channels = midiConfig
     .map(tracks => parseInt(tracks.channel))
@@ -335,12 +344,12 @@ oscServer.on('message', async function (msg) {
       }
     } else if (command === 'port') {
       // make sure received port is in selectMidiIn list and in selectMidiOut list !
-      const selectMidiIn = globals.get('selectMidiIn');
-      const selectMidiOut = globals.get('selectMidiOut');
+      const selectMidiIn = midi.get('selectMidiIn');
+      const selectMidiOut = midi.get('selectMidiOut');
       const receivedPort = msg[1];
       if (selectMidiIn.find(e => e === receivedPort) !== -1
         && selectMidiOut.find(e => e === receivedPort)) {
-        globals.set({
+        midi.set({
           midiInName: receivedPort,
           midiOutName: receivedPort
          });

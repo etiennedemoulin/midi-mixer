@@ -3,7 +3,7 @@
     channel: 1,
     name: 'midi-1',
     type: 'volume',
-    default: null,
+    default: -Infinity,
   },
   {
     channel: 2,
@@ -34,6 +34,6 @@
     channel: 10,
     name: 'coucou',
     type: 'volume',
-    default:10
+    default: 10,
   },
 ]

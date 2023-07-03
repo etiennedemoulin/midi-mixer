@@ -16,7 +16,7 @@ export const globalsSchema = {
     nullable: true,
   },
   config: {
-    type: 'any',
+    type: 'string',
     default: null,
     nullable: true,
   },

@@ -81,3 +81,11 @@ controller-layout {
     padding-left: 20px;
   }
 }
+
+mixer-main {
+  display: none;
+}
+
+mixer-main.active {
+  display: block;
+}

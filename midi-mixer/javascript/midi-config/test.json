@@ -1,0 +1,8 @@
+[
+  {
+    channel: 1,
+    name: 'tototo',
+    type: 'volume',
+    default: 0
+  },
+]

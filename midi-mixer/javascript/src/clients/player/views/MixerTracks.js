@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit';
+import { classMap } from 'lit/directives/class-map.js';
 import JSON5 from 'json5';
 
 import '@ircam/sc-components/sc-slider.js';
@@ -24,6 +25,10 @@ class MixerTracks extends LitElement {
 
     .track.disabled {
       opacity: 0.6;
+    }
+
+    .track.active {
+      background-color: pink;
     }
 
     p {
@@ -70,10 +75,15 @@ class MixerTracks extends LitElement {
 
   render() {
     return this.tracks.map(track => {
+      const classes = {
+        track: true,
+        disabled: track.get('disabled'),
+        active: track.get('faderTouched'),
+      };
+
       return html`
-        <div class="track ${track.get('disabled') ? 'disabled' : ''}">
+        <div class="${classMap(classes)}">
           <p>channel: ${track.get('channel')}</p>
-          <p>touched: ${track.get('faderTouched')}</p>
           <p class="name">${track.get('name') ? track.get('name') : '...'}</p>
           <sc-slider
             ?disabled=${track.get('disabled')}
