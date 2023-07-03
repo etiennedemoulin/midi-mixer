@@ -45,10 +45,11 @@ async function main($container) {
 
   const tracks = await client.stateManager.getCollection('track');
   const globals = await client.stateManager.attach('globals');
+  const midi = await client.stateManager.attach('midi');
 
   const $layout = createLayout(client, $container);
 
-  $layout.addComponent(html`<mixer-main .globals=${globals} .filesystem=${filesystem}></mixer-main>`);
+  $layout.addComponent(html`<mixer-main .globals=${globals} .filesystem=${filesystem} .midi=${midi}></mixer-main>`);
   $layout.addComponent(html`<mixer-tracks style="margin-top: 50px;" .tracks=${tracks}></mixer-tracks>`);
 }
 

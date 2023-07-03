@@ -82,6 +82,15 @@ export function bytesToRaw(bytes) {
   return raw;
 }
 
+export function relToAbsChannel(relChannel, activePage) {
+  return relChannel + (activePage * 8);
+}
+
+export function absToRelChannel(absChannel) {
+  // @TODO : this function can return page..
+  return (absChannel - 1) % 8 + 1;
+}
+
 // return range and normalized range (dans le bon sens..).
 export function getFaderRange(config) {
   if (config.range && config.range.length === 2 && config.type !== 'volume') {

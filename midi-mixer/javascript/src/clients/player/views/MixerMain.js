@@ -43,6 +43,7 @@ class MixerMain extends LitElement {
 
     this.globals = null;
     this.filesystem = null;
+    this.midi = null;
   }
 
   render() {
@@ -54,17 +55,17 @@ class MixerMain extends LitElement {
         <div>
           <sc-text readonly>midi input device</sc-text>
           <sc-select
-            value=${this.globals.get('midiInName')}
-            .options=${this.globals.get('selectMidiIn')}
-            @change=${e => this.globals.set({midiInName: e.target.value}, { source:'web' })}
+            value=${this.midi.get('midiInName')}
+            .options=${this.midi.get('selectMidiIn')}
+            @change=${e => this.midi.set({midiInName: e.target.value}, { source:'web' })}
           ></sc-select>
         </div>
         <div>
           <sc-text readonly>midi output device</sc-text>
           <sc-select
-            value=${this.globals.get('midiOutName')}
-            .options=${this.globals.get('selectMidiOut')}
-            @change=${e => this.globals.set({midiOutName: e.target.value}, { source:'web' })}
+            value=${this.midi.get('midiOutName')}
+            .options=${this.midi.get('selectMidiOut')}
+            @change=${e => this.midi.set({midiOutName: e.target.value}, { source:'web' })}
           ></sc-select>
         </div>
         <div>

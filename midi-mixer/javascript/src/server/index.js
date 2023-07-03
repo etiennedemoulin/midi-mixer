@@ -14,10 +14,11 @@ import { Server as OscServer, Client as OscClient, Bundle } from 'node-osc';
 import _ from 'lodash';
 import JSON5 from 'json5';
 
-import { userToRaw, rawToUser, getFaderRange, parseTrackConfig, rawToBytes, bytesToRaw } from './helpers.js';
+import { userToRaw, rawToUser, getFaderRange, parseTrackConfig, rawToBytes, bytesToRaw, relToAbsChannel, absToRelChannel } from './helpers.js';
 import { trackSchema } from './schemas/tracks.js';
 import { globalsSchema } from './schemas/globals.js';
-import { onMidiOutFail, onMidiInFail, getMidiDeviceList, displayUserFader, setFaderView, setMixerView } from './midiCommunicator.js';
+import { midiSchema } from './schemas/midi.js';
+import { onMidiOutFail, onMidiInFail, getMidiDeviceList, displayUserFader, setFaderView, setMixerView, resetMixerView } from './midiCommunicator.js';
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -49,6 +50,7 @@ server.pluginManager.register('filesystem', filesystemPlugin, {
 // register schemas
 server.stateManager.registerSchema('track', trackSchema);
 server.stateManager.registerSchema('globals', globalsSchema);
+server.stateManager.registerSchema('midi', midiSchema);
 
 await server.start();
 
@@ -63,6 +65,50 @@ const globals = await server.stateManager.create('globals', {
   configFilename: filesystem.getTree().children[0],
 });
 
+// --------------------------------- move to it's own file
+// initialise midi lib
+let midiInPort;
+let midiOutPort;
+
+const { selectMidiIn, selectMidiOut } = getMidiDeviceList();
+
+const midi = await server.stateManager.create('midi', {
+  selectMidiIn: selectMidiIn,
+  selectMidiOut: selectMidiOut
+});
+
+midi.onUpdate( (updates, oldValues, context) => {
+  if ('midiInName' in updates) {
+    const name = updates.midiInName ? updates.midiInName : selectMidiIn[0];
+    midiInPort = JZZ({ sysex: true }).openMidiIn(name).or(onMidiInFail).and(function() {
+      if (midiInPort) {
+        midiInPort.close();
+      }
+      const midiInName = this.name();
+      console.log(`- Midi Input Device: ${midiInName}`);
+      midi.set({ midiInName: midiInName }, {source:'server'});
+    });
+    midiInPort.connect(JZZ.Widget({ _receive: onMidiReceive }));
+  }
+
+  if ('midiOutName' in updates) {
+    const name = updates.midiOutName ? updates.midiOutName : selectMidiOut[0];
+    midiOutPort = JZZ({ sysex: true }).openMidiOut(name).or(onMidiOutFail).and(function() {
+      if (midiOutPort) {
+        resetMixerView(midiOutPort);
+        midiOutPort.close();
+      }
+      const midiOutName = this.name();
+      console.log(`- Midi Output Device: ${midiOutName}`);
+      midi.set({ midiOutName: midiOutName }, {source:'server'});
+      if (tracks) {
+        setMixerView(globals.get('activePage'), this, tracks);
+      };
+    });
+  }
+}, true);
+// ___________________________________
+
 // initialise controllers
 // this is globals variable for the transfert table of fader values
 // updated value on 235 and used as a table on 130
@@ -73,56 +119,9 @@ const oscServer = new OscServer(3333, '0.0.0.0', () => {
   console.log('OSC Server is listening on 3333');
 });
 
-// --------------------------------- move to it's own file
-// initialise midi lib
-let midiInPort;
-let midiOutPort;
-
-function onMidiInSuccess() {
-  if (midiInPort) {
-    midiInPort.close();
-  }
-  midiInPort = this;
-  const midiInName = this.name();
-  globals.set({ midiInName: midiInName }, {source:'server'});
-  console.log(`- Midi Input Device: ${midiInName}`);
-}
-
-function onMidiOutSuccess() {
-  if (midiOutPort) {
-    midiOutPort.close();
-  }
-  midiOutPort = this;
-  const midiOutName = this.name();
-  globals.set({ midiOutName: midiOutName }, {source:'server'});
-  console.log(`- Midi Output Device: ${midiOutName}`);
-}
-
-JZZ().and(function() {
-  const info = this.info();
-  getMidiDeviceList(info, globals);
-});
-
 // ---------------------------------
 
 globals.onUpdate(async (updates, oldValues, context) => {
-  if ('midiInName' in updates) {
-    let name = updates.midiInName;
-    if (name === null) {
-      name = updates.selectMidiIn[0]
-    }
-    JZZ().openMidiIn(name).or(onMidiInFail).and(onMidiInSuccess);
-    midiInPort.connect(JZZ.Widget({ _receive: onMidiReceive }));
-  }
-
-  if ('midiOutName' in updates) {
-    let name = updates.midiOutName;
-    if (name === null) {
-      name = updates.selectMidiOut[0]
-    }
-    JZZ().openMidiOut(name).or(onMidiOutFail).and(onMidiOutSuccess);
-  }
-
   if ('controllerName' in updates) {
     const { fader } = await import (`./controllers/${updates.controllerName}.js`);
     controllerFader = fader;
@@ -133,8 +132,6 @@ globals.onUpdate(async (updates, oldValues, context) => {
     updateTracks();
   }
 }, true);
-
-// _____________________
 
 async function updateTracks() {
   // console.log('++++ updates tracks');
@@ -225,8 +222,10 @@ async function updateTracks() {
     }
 
     nameMaxTrack(track);
-
   });
+  if (midiOutPort) {
+    setMixerView(globals.get('activePage'), midiOutPort, tracks);
+  };
 }
 
 filesystem.onUpdate(updateTracks, true);
@@ -273,15 +272,17 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
 // _______________________________
 function onTrackUpdate(newValues, oldValues, context, track) {
   // send midi side
-  if (context.source !== 'midi') {
-    setFaderView(track.get('channel'), globals.get('activePage'), tracks, midiOutPort);
-  } else {
-    // send fader value on release
-    if (track.get('faderTouched') === false && track.get('faderBytes')) {
-      console.log("WARNING ! need to catch the relative channel here ! 281");
-      const channel = track.get('channel') + 223;
-      const bytes = track.get('faderBytes');
-      midiOutPort.send([channel, bytes[1], bytes[0]])
+  if (midiOutPort) {
+    if (context.source !== 'midi') {
+      setFaderView(track.get('channel'), globals.get('activePage'), tracks, midiOutPort);
+    } else {
+      // send fader value on release
+      if (track.get('faderTouched') === false && track.get('faderBytes')) {
+        const absChannel = track.get('channel');
+        const relChannel = absToRelChannel(absChannel) + 223;
+        const bytes = track.get('faderBytes');
+        midiOutPort.send([relChannel, bytes[1], bytes[0]])
+      }
     }
   }
   // send osc side
@@ -354,59 +355,32 @@ oscServer.on('message', async function (msg) {
   }
 });
 
-// _______________________
-// listening for updates on midi side
-// _______________________
-// MCU.controlMap({
-//   'button': {
-//     'down': {
-//       'FADER BANK RIGHT': function() {
-//         const idMap = tracks.map(t => t.get('trackId'));
-//         const lastFader = idMap[idMap.length - 1];
-//         const activePage = globals.get('activePage');
-//         const lastPage = Math.floor((lastFader - 1) / 8);
-//         if (activePage < lastPage) {
-//           globals.set({ activePage: activePage + 1 }, {source:'midi'});
-//           setMixerView(globals.get('activePage'), tracks);
-//         }
-//        },
-//       'FADER BANK LEFT': function() {
-//         const activePage = globals.get('activePage');
-//         if (activePage > 0) {
-//           globals.set({ activePage: activePage - 1 }, {source: 'midi'});
-//           setMixerView(globals.get('activePage'), tracks);
-//         }
-//       },
-//     },
-//   },
-// });
-
 function onMidiReceive(msg) {
-  // retaper tout ça pour avoir les updates !
-  // avoir des fonctions de conversion relChannel / absChannel !!
   if ((msg.isNoteOn() || msg.isNoteOff()) &&
     [104, 105, 106, 107, 108, 109, 110, 111].includes(msg.getNote())) {
     // parse touched flag
     const relChannel = msg.getNote() - 103;
+    const absChannel = relToAbsChannel(relChannel, globals.get('activePage'));
     const faderTouched = msg.getVelocity() > 0;
-    const absChannel = relChannel + globals.get('activePage') * 8;
     const track = tracks.find(t => t.get('channel') === absChannel);
-    track.set({
-      faderBytes: track.get('faderBytes'),
-      faderTouched: faderTouched
-    }, { source: 'midi' });
-
+    if (track && track.get('disabled') === false) {
+      track.set({
+        faderBytes: track.get('faderBytes'),
+        faderTouched: faderTouched
+      }, { source: 'midi' });
+    }
   } else if ([224, 225, 226, 227, 228, 229, 230, 231].includes(msg[0])) {
     // parse fader value
     const relChannel = msg[0] - 223;
+    const absChannel = relToAbsChannel(relChannel, globals.get('activePage'));
     const faderBytes = [msg[2], msg[1]]; // msb, lsb
-    const absChannel = relChannel + globals.get('activePage') * 8;
     const track = tracks.find(t => t.get('channel') === absChannel);
-    track.set({
-      faderBytes: faderBytes,
-      faderTouched: track.get('faderTouched')
-    }, { source: 'midi' });
-
+    if (track && track.get('disabled') === false) {
+      track.set({
+        faderBytes: faderBytes,
+        faderTouched: track.get('faderTouched')
+      }, { source: 'midi' });
+    }
   } else if (msg.isNoteOn() && [46, 47].includes(msg.getNote())) {
     // parse fader bank left / right
     if (msg.getNote() === 46) {
@@ -432,3 +406,4 @@ function onMidiReceive(msg) {
 
 const oscClient = new OscClient('127.0.0.1', 3334);
 oscClient.send(new Bundle(['/ready', 0]), () => oscClient.close());
+
