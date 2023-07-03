@@ -57,7 +57,7 @@ class MixerMain extends LitElement {
           <sc-select
             value=${this.midi.get('midiInName')}
             .options=${this.midi.get('selectMidiIn')}
-            @change=${e => this.midi.set({midiInName: e.target.value}, { source:'web' })}
+            @change=${e => this.midi.set({ midiInName: e.target.value }, { source:'web' })}
           ></sc-select>
         </div>
         <div>
@@ -65,7 +65,7 @@ class MixerMain extends LitElement {
           <sc-select
             value=${this.midi.get('midiOutName')}
             .options=${this.midi.get('selectMidiOut')}
-            @change=${e => this.midi.set({midiOutName: e.target.value}, { source:'web' })}
+            @change=${e => this.midi.set({ midiOutName: e.target.value }, { source:'web' })}
           ></sc-select>
         </div>
         <div>
@@ -73,7 +73,7 @@ class MixerMain extends LitElement {
           <sc-select
             value=${this.globals.get('controllerName')}
             .options=${this.globals.get('selectControllers')}
-            @change=${e => this.globals.set({controllerName: e.target.value}, { source: 'web' })}
+            @change=${e => this.globals.set({ controllerName: e.target.value }, { source: 'web' })}
           ></sc-select>
         </div>
       </div>

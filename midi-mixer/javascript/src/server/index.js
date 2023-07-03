@@ -72,41 +72,45 @@ let midiOutPort;
 
 const { selectMidiIn, selectMidiOut } = getMidiDeviceList();
 
-const midi = await server.stateManager.create('midi', {
-  selectMidiIn: selectMidiIn,
-  selectMidiOut: selectMidiOut
-});
+try {
+  const midi = await server.stateManager.create('midi', {
+    selectMidiIn: selectMidiIn,
+    selectMidiOut: selectMidiOut
+  });
 
-midi.onUpdate( (updates, oldValues, context) => {
-  if ('midiInName' in updates) {
-    const name = updates.midiInName ? updates.midiInName : selectMidiIn[0];
-    midiInPort = JZZ({ sysex: true }).openMidiIn(name).or(onMidiInFail).and(function() {
-      if (midiInPort) {
-        midiInPort.close();
-      }
-      const midiInName = this.name();
-      console.log(`- Midi Input Device: ${midiInName}`);
-      midi.set({ midiInName: midiInName }, {source:'server'});
-    });
-    midiInPort.connect(JZZ.Widget({ _receive: onMidiReceive }));
-  }
+  midi.onUpdate( (updates, oldValues, context) => {
+    if ('midiInName' in updates) {
+      const name = updates.midiInName ? updates.midiInName : selectMidiIn[0];
+      midiInPort = JZZ({ sysex: true }).openMidiIn(name).or(onMidiInFail).and(function() {
+        if (midiInPort) {
+          midiInPort.close();
+        }
+        const midiInName = this.name();
+        console.log(`- Midi Input Device: ${midiInName}`);
+        midi.set({ midiInName: midiInName }, {source:'server'});
+      });
+      midiInPort.connect(JZZ.Widget({ _receive: onMidiReceive }));
+    }
 
-  if ('midiOutName' in updates) {
-    const name = updates.midiOutName ? updates.midiOutName : selectMidiOut[0];
-    midiOutPort = JZZ({ sysex: true }).openMidiOut(name).or(onMidiOutFail).and(function() {
-      if (midiOutPort) {
-        resetMixerView(midiOutPort);
-        midiOutPort.close();
-      }
-      const midiOutName = this.name();
-      console.log(`- Midi Output Device: ${midiOutName}`);
-      midi.set({ midiOutName: midiOutName }, {source:'server'});
-      if (tracks) {
-        setMixerView(globals.get('activePage'), this, tracks);
-      };
-    });
-  }
-}, true);
+    if ('midiOutName' in updates) {
+      const name = updates.midiOutName ? updates.midiOutName : selectMidiOut[0];
+      midiOutPort = JZZ({ sysex: true }).openMidiOut(name).or(onMidiOutFail).and(function() {
+        if (midiOutPort) {
+          resetMixerView(midiOutPort);
+          midiOutPort.close();
+        }
+        const midiOutName = this.name();
+        console.log(`- Midi Output Device: ${midiOutName}`);
+        midi.set({ midiOutName: midiOutName }, {source:'server'});
+        if (tracks) {
+          setMixerView(globals.get('activePage'), this, tracks);
+        };
+      });
+    }
+  }, true);
+} catch (err) {
+  console.log(err.message);
+}
 // ___________________________________
 
 // initialise controllers
@@ -236,34 +240,36 @@ filesystem.onUpdate(updateTracks, true);
 server.stateManager.registerUpdateHook('track', async (updates, currentValues, context) => {
   // hook compute each fader values
   if (context.source !== 'hook') {
-    // will be updated only if 1st entry in updates, please be careful
-    const key = Object.keys(updates)[0];
-    const input = updates[key];
-    const id = currentValues.id;
-    let user = null;
-    let raw = null;
-    let bytes = null;
+    if ('faderRaw' in updates || 'faderUser' in updates || 'faderBytes' in updates) {
+      // will be updated only if 1st entry in updates, please be careful
+      const key = Object.keys(updates)[0];
+      const input = updates[key];
+      const id = currentValues.id;
+      let faderUser = null;
+      let faderRaw = null;
+      let faderBytes = null;
 
-    if (key === 'faderRaw') {
-      user = rawToUser(input, controllerFader, currentValues);
-      bytes = rawToBytes(input);
-      raw = input;
-    } else if (key === 'faderUser') {
-      raw = userToRaw(input, controllerFader, currentValues);
-      bytes = rawToBytes(raw);
-      user = input;
-    } else if (key === 'faderBytes') {
-      raw = bytesToRaw(input);
-      user = rawToUser(raw, controllerFader, currentValues);
-      bytes = input;
+      if (key === 'faderRaw') {
+        faderUser = rawToUser(input, controllerFader, currentValues);
+        faderBytes = rawToBytes(input);
+        faderRaw = input;
+      } else if (key === 'faderUser') {
+        faderRaw = userToRaw(input, controllerFader, currentValues);
+        faderBytes = rawToBytes(faderRaw);
+        faderUser = input;
+      } else if (key === 'faderBytes') {
+        faderRaw = bytesToRaw(input);
+        faderUser = rawToUser(faderRaw, controllerFader, currentValues);
+        faderBytes = input;
+      }
+
+      return {
+        ...updates,
+        faderUser,
+        faderBytes,
+        faderRaw,
+      };
     }
-
-    return {
-      ...updates,
-      faderUser: user,
-      faderBytes: bytes,
-      faderRaw : raw,
-    };
   }
 });
 
