@@ -26,11 +26,11 @@ Max.addHandlers({
 const child = fork('./src/server/index.js');
 
 process.on('exit', function() {
-  child.kill();
+  child.kill('SIGTERM');
 });
 
 process.on('error', function() {
-  child.kill();
+  child.kill('SIGTERM');
 });
 
 
@@ -51,12 +51,14 @@ server.on('bundle', async (msg) => {
     if (trackFlag === 'track') {
       if (address[2] === 'create') {
         const channel = parseInt(address[1]);
+        // console.log("create track " + channel);
         config.push({
           channel: channel,
           name: null,
         });
       } else if (address[2] === 'remove') {
         const channel = parseInt(address[1]);
+        // console.log("remove track " + channel);
         const index = config.findIndex(e => e.channel === channel);
         if (config[index].name !== null) {
           await deleteTrack([config[index]], true);
@@ -65,6 +67,7 @@ server.on('bundle', async (msg) => {
       } else if (address[2] === 'name') {
         const channel = parseInt(address[1]);
         const name = e[1];
+        // console.log("name track " + channel);
         const index = config.findIndex(e => e.channel === channel);
         if (config[index].name !== name) {
           await deleteTrack([config[index]], false);

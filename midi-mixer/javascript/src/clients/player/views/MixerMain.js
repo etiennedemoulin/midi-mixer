@@ -78,9 +78,11 @@ class MixerMain extends LitElement {
         </div>
       </div>
       <div class="config">
+        <sc-text readonly>config file</sc-text>
+        <p>${this.globals.get('configFilename').name}</p>
         <sc-editor
-          .value="${this.globals.get('config')}"
-          @change=${e => this.filesystem.writeFile(this.globals.get('configFilename').name, e.detail.value)}
+          .value="${ this.globals.get('config') }"
+          @change=${e => this.filesystem.writeFile(this.globals.get('configFilename').relPath, e.detail.value)}
           save-button
         ></sc-editor>
         <sc-file-tree

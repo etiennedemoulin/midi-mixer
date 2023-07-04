@@ -47,18 +47,20 @@ async function main($container) {
   const globals = await client.stateManager.attach('globals');
   const midi = await client.stateManager.attach('midi');
 
-  // const $layout = createLayout(client, $container);
+  const $layout = createLayout(client, $container);
 
   // $layout.addComponent(html`<mixer-main style="display: none" .globals=${globals} .filesystem=${filesystem} .midi=${midi}></mixer-main>`);
-  // $layout.addComponent(html`<mixer-tracks style="margin-top: 50px;" .tracks=${tracks}></mixer-tracks>`);
+    // $layout.addComponent(html`<mixer-tracks style="margin-top: 50px;" .tracks=${tracks}></mixer-tracks>`);
+  $layout.addComponent(html`<mixer-tracks .tracks=${tracks}></mixer-tracks>`);
+  $layout.addComponent(html`<mixer-main .globals=${globals} .filesystem=${filesystem} .midi=${midi}></mixer-main>`);
 
-  render(html`
-    <button
-      @click=${e => document.querySelector('mixer-main').classList.toggle('active')}
-    >click me</button>
-    <mixer-main .globals=${globals} .filesystem=${filesystem} .midi=${midi}></mixer-main>
-    <mixer-tracks style="margin-top: 50px;" .tracks=${tracks}></mixer-tracks>
-  `, document.body);
+  // render(html`
+  //   <button
+  //     @click=${e => document.querySelector('mixer-main').classList.toggle('active')}
+  //   >click me</button>
+  //   <mixer-main .globals=${globals} .filesystem=${filesystem} .midi=${midi}></mixer-main>
+  //   <mixer-tracks style="margin-top: 50px;" .tracks=${tracks}></mixer-tracks>
+  // `, document.body);
 }
 
 // The launcher enables instanciation of multiple clients in the same page to

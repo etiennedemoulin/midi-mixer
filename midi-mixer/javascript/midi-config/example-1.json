@@ -6,7 +6,7 @@
     default: -Infinity,
   },
   {
-    channel: 2,
+    channel: 3,
     name: 'midi-2',
     type: 'linear',
     default: 5,

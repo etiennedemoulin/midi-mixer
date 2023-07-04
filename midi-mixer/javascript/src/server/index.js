@@ -72,12 +72,11 @@ let midiOutPort;
 
 const { selectMidiIn, selectMidiOut } = getMidiDeviceList();
 
+const midi = await server.stateManager.create('midi', {
+  selectMidiIn: selectMidiIn,
+  selectMidiOut: selectMidiOut
+});
 try {
-  const midi = await server.stateManager.create('midi', {
-    selectMidiIn: selectMidiIn,
-    selectMidiOut: selectMidiOut
-  });
-
   midi.onUpdate( (updates, oldValues, context) => {
     if ('midiInName' in updates) {
       const name = updates.midiInName ? updates.midiInName : selectMidiIn[0];
@@ -242,6 +241,15 @@ async function updateTracks() {
 }
 
 filesystem.onUpdate(updateTracks, true);
+filesystem.onUpdate(updates => {
+  const { events } = updates;
+  console.log(events);
+  if (events[0] && events[0].type === 'create') {
+    console.log("update config !!! " + events[0].node.name);
+    console.log("symlink is not tracked...........");
+    // globals.set({ configFilename: events[0].node }, { source:'config' });
+  }
+});
 
 // --------------------------------
 // hook
@@ -311,6 +319,7 @@ function onTrackUpdate(newValues, oldValues, context, track) {
     const oscClient = new OscClient('127.0.0.1', 3334);
     oscClient.send(bundle, () => oscClient.close());
   }
+
 }
 
 
@@ -342,12 +351,8 @@ oscServer.on('message', async function (msg) {
       const sourcePath = msg[1];
       const filename = sourcePath.split('/').slice(-1)[0];
       const destPath = path.join(process.cwd(), `./midi-config/linked/${filename}`);
-      await fs.remove(destPath);
       await fs.symlink(sourcePath, destPath);
-      if (globals.get('configFilename').name !== filename) {
-        const configFilename = { path: `midi-config/linked/${filename}`, name: filename }
-        globals.set({ configFilename: configFilename })
-      }
+      // globals.set({ configFilename: { path: `midi-config/linked/${filename}`, name: filename } }, { source:'config' });
     } else if (command === 'port') {
       // make sure received port is in selectMidiIn list and in selectMidiOut list !
       const selectMidiIn = midi.get('selectMidiIn');
@@ -422,3 +427,24 @@ function onMidiReceive(msg) {
 const oscClient = new OscClient('127.0.0.1', 3334);
 oscClient.send(new Bundle(['/ready', 0]), () => oscClient.close());
 
+
+async function exitHandler(options, exitCode) {
+  await fs.emptyDir(path.join(process.cwd(), './midi-config/linked/'));
+  if (options.cleanup) console.log('clean');
+  if (exitCode || exitCode === 0) console.log(exitCode);
+  if (options.exit) process.exit();
+}
+
+//do something when app is closing
+process.on('exit', exitHandler.bind(null,{cleanup:true}));
+
+//catches ctrl+c event
+process.on('SIGINT', exitHandler.bind(null, {exit:true}));
+
+// catches "kill pid" (for example: nodemon restart)
+process.on('SIGUSR1', exitHandler.bind(null, {exit:true}));
+process.on('SIGUSR2', exitHandler.bind(null, {exit:true}));
+process.on('SIGTERM', exitHandler.bind(null, {exit:true}));
+
+//catches uncaught exceptions
+process.on('uncaughtException', exitHandler.bind(null, {exit:true}));
