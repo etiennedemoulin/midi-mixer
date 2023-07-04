@@ -83,9 +83,9 @@ export async function setMixerView(activePage, midiOutPort, tracks) {
     midiOutPort.send(mcu.concat(data).concat(end));
     // console.log(mcu.concat(data).concat(end))
     // console.log(formatDisplay(displayName).length);
-    log(`> names ${displayName}`);
+    // log(`> names ${displayName}`);
   }
-  displayUserFader(activePage, tracks);
+  displayUserFader(activePage, midiOutPort, tracks);
 
 }
 
@@ -97,17 +97,21 @@ export function setFaderView(absChannel, activePage, tracks, midiOutPort) {
   if (faderBytes) {
     if (relChannel + (activePage * 8) === absChannel) {
       midiOutPort.send([relChannel+223, faderBytes[1], faderBytes[0]])
-      displayUserFader(activePage, tracks);
+      displayUserFader(activePage, midiOutPort, tracks);
     } else if (absChannel === 0) {
       log(`> set fader MAIN: ${faderBytes}`);
     }
   }
 }
 
-function _displayUserFader(activePage, tracks) {
+function _displayUserFader(activePage, midiOutPort, tracks) {
   const displayValue = getValuesFromPage(activePage, tracks.map(t => t.get('faderUser')));
   if (displayValue) {
-    log(`> display dB: ${displayValue}`);
+    const mcu = [240, 0, 0, 102, 20, 18, 56];
+    const data = formatDisplay(displayValue);
+    const end = [247];
+    midiOutPort.send(mcu.concat(data).concat(end));
+    // log(`> display dB: ${displayValue}`);
   }
 
 }

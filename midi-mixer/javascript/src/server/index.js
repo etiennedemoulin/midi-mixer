@@ -299,6 +299,8 @@ function onTrackUpdate(newValues, oldValues, context, track) {
     if (context.source !== 'midi') {
       setFaderView(track.get('channel'), globals.get('activePage'), tracks, midiOutPort);
     } else {
+      // update display values
+      displayUserFader(globals.get('activePage'), midiOutPort, tracks);
       // send fader value on release
       if (track.get('faderTouched') === false && track.get('faderBytes')) {
         const absChannel = track.get('channel');
