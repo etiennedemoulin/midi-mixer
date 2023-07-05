@@ -243,10 +243,10 @@ async function updateTracks() {
 filesystem.onUpdate(updateTracks, true);
 filesystem.onUpdate(updates => {
   const { events } = updates;
-  console.log(events);
+  // console.log(events);
   if (events[0] && events[0].type === 'create') {
-    console.log("update config !!! " + events[0].node.name);
-    console.log("symlink is not tracked...........");
+    // console.log("update config !!! " + events[0].node.name);
+    // console.log("symlink is not tracked...........");
     // globals.set({ configFilename: events[0].node }, { source:'config' });
   }
 });
@@ -354,7 +354,7 @@ oscServer.on('message', async function (msg) {
       const filename = sourcePath.split('/').slice(-1)[0];
       const destPath = path.join(process.cwd(), `./midi-config/linked/${filename}`);
       await fs.symlink(sourcePath, destPath);
-      // globals.set({ configFilename: { path: `midi-config/linked/${filename}`, name: filename } }, { source:'config' });
+      globals.set({ configFilename: { path: `midi-config/linked/${filename}`, relPath: `linked/${filename}`, name: filename } }, { source:'config' });
     } else if (command === 'port') {
       // make sure received port is in selectMidiIn list and in selectMidiOut list !
       const selectMidiIn = midi.get('selectMidiIn');
