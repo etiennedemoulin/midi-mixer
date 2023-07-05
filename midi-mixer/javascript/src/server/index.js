@@ -353,6 +353,7 @@ oscServer.on('message', async function (msg) {
       const sourcePath = msg[1];
       const filename = sourcePath.split('/').slice(-1)[0];
       const destPath = path.join(process.cwd(), `./midi-config/linked/${filename}`);
+      // await fs.unlink(destPath);
       await fs.symlink(sourcePath, destPath);
       globals.set({ configFilename: { path: `midi-config/linked/${filename}`, relPath: `linked/${filename}`, name: filename } }, { source:'config' });
     } else if (command === 'port') {
@@ -431,7 +432,7 @@ oscClient.send(new Bundle(['/ready', 0]), () => oscClient.close());
 
 
 async function exitHandler(options, exitCode) {
-  await fs.emptyDir(path.join(process.cwd(), './midi-config/linked/'));
+  // await fs.emptyDir(path.join(process.cwd(), './midi-config/linked/'));
   if (options.cleanup) console.log('clean');
   if (exitCode || exitCode === 0) console.log(exitCode);
   if (options.exit) process.exit();

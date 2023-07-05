@@ -109,6 +109,7 @@ server.on('bundle', async (msg) => {
         const client = new Client('127.0.0.1', 3333);
         client.send('/config/controller', controller, () => client.close());
       }
+      Max.outlet("ready");
     };
   });
 });
@@ -216,7 +217,7 @@ async function createTrack(config) {
   // create patch
   for (i in config) {
     const patch = config[i].name;
-    generateBox(`receive-${patch}`, "receive", [patch], { x: 600+pos, y: 400 }, 1, { x: 60, y: 10+pos/4});
+    generateBox(`receive-${patch}`, "receive", [patch], { x: 600+pos, y: 400 }, 0, { x: 60, y: 10+pos/4});
     generateBox(`prepend-${patch}`, "prepend", [patch], { x: 600+pos, y: 430 }, 0);
     generateBox(`send-${patch}`, "send", [`#0_node`], { x: 600+pos, y: 460 }, 0);
     generateLink(`receive-${patch}`, 0, `prepend-${patch}`, 0);
