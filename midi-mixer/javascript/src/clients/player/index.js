@@ -4,9 +4,11 @@ import launcher from '@soundworks/helpers/launcher.js';
 import filesystemPlugin from '@soundworks/plugin-filesystem/client.js';
 
 import { html, render } from 'lit';
+import './views/mixer-editor.js';
+import './views/mixer-tracks.js';
 import createLayout from './views/layout.js';
-import './views/MixerMain.js';
-import './views/MixerTracks.js';
+
+
 
 
 // import { removeFromArray } from './utils.js';
@@ -49,18 +51,76 @@ async function main($container) {
 
   const $layout = createLayout(client, $container);
 
-  // $layout.addComponent(html`<mixer-main style="display: none" .globals=${globals} .filesystem=${filesystem} .midi=${midi}></mixer-main>`);
-    // $layout.addComponent(html`<mixer-tracks style="margin-top: 50px;" .tracks=${tracks}></mixer-tracks>`);
-  $layout.addComponent(html`<mixer-tracks .tracks=${tracks}></mixer-tracks>`);
-  $layout.addComponent(html`<mixer-main .globals=${globals} .filesystem=${filesystem} .midi=${midi}></mixer-main>`);
+  let view = 'mixer';
 
-  // render(html`
-  //   <button
-  //     @click=${e => document.querySelector('mixer-main').classList.toggle('active')}
-  //   >click me</button>
-  //   <mixer-main .globals=${globals} .filesystem=${filesystem} .midi=${midi}></mixer-main>
-  //   <mixer-tracks style="margin-top: 50px;" .tracks=${tracks}></mixer-tracks>
-  // `, document.body);
+  const mixerView = html`
+    <mixer-tracks
+      .tracks=${tracks}
+    ></mixer-tracks>
+  `;
+  const editorView = html`
+    <mixer-editor
+      .globals=${globals}
+      .filesystem=${filesystem}
+    ></mixer-editor>
+  `;
+
+  $layout.addComponent(html`
+    <header>
+      <sc-icon
+        icon="gear"
+        @input=${e => {
+          view = view === 'editor' ? 'mixer' : 'editor';
+
+          switch (view) {
+            case 'editor': {
+              $layout.deleteComponent(mixerView);
+              $layout.addComponent(editorView);
+              break;
+            }
+          case 'mixer': {
+              $layout.deleteComponent(editorView);
+              $layout.addComponent(mixerView);
+              break;
+            }
+          }
+        }}
+      >config</sc-icon>
+
+      <div class="midi-controls">
+        <div>
+          <sc-text readonly>Midi In</sc-text>
+          <sc-select
+            value=${midi.get('midiInName')}
+            .options=${midi.get('selectMidiIn')}
+            @change=${e => midi.set({ midiInName: e.target.value }, { source:'web' })}
+          ></sc-select>
+        </div>
+        <div>
+          <sc-text readonly>Midi Out</sc-text>
+          <sc-select
+            value=${midi.get('midiOutName')}
+            .options=${midi.get('selectMidiOut')}
+            @change=${e => midi.set({ midiOutName: e.target.value }, { source:'web' })}
+          ></sc-select>
+        </div>
+        <div>
+          <sc-text readonly>Mapping</sc-text>
+          <sc-select
+            value=${globals.get('controllerName')}
+            .options=${globals.get('selectControllers')}
+            @change=${e => globals.set({ controllerName: e.target.value }, { source: 'web' })}
+          ></sc-select>
+        </div>
+      </div>
+    </header>
+  `);
+
+  if (view === 'mixer') {
+    $layout.addComponent(mixerView);
+  } else {
+    $layout.addComponent(editorView);
+  }
 }
 
 // The launcher enables instanciation of multiple clients in the same page to

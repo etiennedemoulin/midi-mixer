@@ -10,17 +10,20 @@ class MixerTracks extends LitElement {
   static styles = css`
     :host {
       display: flex;
-      flex-orientation: horizontal;
-
-      height: 400px;
+      min-height: calc(100vh - 30px);
+      align-items: stretch;
       background-color: #232323;
     }
 
     .track {
-      width: 100px;
+      width: 80px;
       border: 2px solid #343434;
       background-color: #121212;
       padding: 4px;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      flex-direction: column;
     }
 
     .track.disabled {
@@ -42,11 +45,12 @@ class MixerTracks extends LitElement {
 
     sc-slider {
       width: 100%;
-      height: 200px;
+      height: 100%;
     }
 
     sc-number {
       margin-top: 2px;
+      width: 100%;
     }
 
     .mute {
@@ -83,28 +87,33 @@ class MixerTracks extends LitElement {
 
       return html`
         <div class="${classMap(classes)}">
-          <p>channel: ${track.get('channel')}</p>
-          <p class="name">${track.get('name') ? track.get('name') : '...'}</p>
+          <div>
+            <p>channel: ${track.get('channel')}</p>
+            <p class="name">${track.get('name') ? track.get('name') : '...'}</p>
+          </div>
           <sc-slider
+            relative
             ?disabled=${track.get('disabled')}
             .value=${track.get('faderRaw')}
             orientation="vertical"
             @input=${e => track.set({ faderRaw: e.detail.value }, { source: 'web' })}
           ></sc-slider>
-          <sc-number
-            ?disabled=${track.get('disabled')}
-            min=${track.get('faderRange') ? track.get('faderRange')[1][0] : 0}
-            max=${track.get('faderRange') ? track.get('faderRange')[1][1] : 1}
-            .value=${track.get('faderUser')}
-            @input=${e => track.set({ faderUser: e.detail.value }, { source: 'web' })}
-          ></sc-number>
-          <div class="mute">
-            <p>mute:</p>
-            <sc-toggle
+          <div>
+            <sc-number
               ?disabled=${track.get('disabled')}
-              ?active=${track.get('mute')}
-              @change=${e => track.set({ mute: e.detail.value }, { source: 'web' })}
-            ></sc-toggle>
+              min=${track.get('faderRange') ? track.get('faderRange')[1][0] : 0}
+              max=${track.get('faderRange') ? track.get('faderRange')[1][1] : 1}
+              .value=${track.get('faderUser')}
+              @input=${e => track.set({ faderUser: e.detail.value }, { source: 'web' })}
+            ></sc-number>
+            <div class="mute">
+              <p>mute:</p>
+              <sc-toggle
+                ?disabled=${track.get('disabled')}
+                ?active=${track.get('mute')}
+                @change=${e => track.set({ mute: e.detail.value }, { source: 'web' })}
+              ></sc-toggle>
+            </div>
           </div>
         </div>
       `;
