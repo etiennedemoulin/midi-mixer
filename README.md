@@ -39,3 +39,7 @@ a track has a name `/track/[channel]/name name`
 Receive values `/track/[channel]/fader/[type] value`  
 Server is ready `/ready`  
 Exiting server `/exit`  
+
+# Roadmap
+* clip sended values  
+* interpolation inside mapping table  
