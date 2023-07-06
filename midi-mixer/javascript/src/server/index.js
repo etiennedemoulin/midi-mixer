@@ -367,6 +367,7 @@ oscServer.on('message', async function (msg) {
       const destPath = path.join(process.cwd(), `./midi-config/linked/${filename}`);
       createdSymlinkFile = destPath;
       // create symlink to watch for changes
+      await fs.remove(destPath);
       await fs.symlink(sourcePath, destPath);
       // console.log("create symlink " + destPath);
     } else if (command === 'port') {

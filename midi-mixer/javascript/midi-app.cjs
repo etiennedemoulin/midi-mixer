@@ -20,6 +20,12 @@ Max.addHandlers({
   [Max.MESSAGE_TYPES.ALL]: (handled, ...args) => onMessage(...args),
   edit: () => { if (configFilename) { open(configFilename) }},
   init: (name, patchPath, patchIndex, receivedPort, receivedController) => init(name, patchPath, patchIndex, receivedPort, receivedController),
+  device: (name) => _setMidiDevice(name),
+  controller: (name) => _setController(name),
+  config: (name) => {
+    configFilename = path.join(cwd, name);
+    _setConfig(configFilename);
+  },
 });
 
 // START SOUNDWORKS
@@ -109,16 +115,13 @@ server.on('bundle', async (msg) => {
       }
     } else if (trackFlag === 'ready') {
       if (configFilename !== 0 && fs.existsSync(configFilename)) {
-        const client = new Client('127.0.0.1', 3333);
-        client.send('/config/filename', configFilename, () => client.close());
+        _setConfig(configFilename);
       };
       if (port) {
-        const client = new Client('127.0.0.1', 3333);
-        client.send('/config/port', port, () => client.close());
+        _setMidiDevice(port);
       }
       if (controller) {
-        const client = new Client('127.0.0.1', 3333);
-        client.send('/config/controller', controller, () => client.close());
+        _setController(controller);
       }
       Max.outlet("ready");
     } else if (trackFlag === 'exit') {
@@ -136,7 +139,7 @@ async function onMessage(...args) {
   // console.log(args);
 
   const [key, value] = args
-  const handledMessages = ['edit', 'getPorts', 'getDevices', 'init'];
+  const handledMessages = ['edit', 'config', 'device', 'init', 'controller'];
 
   if (handledMessages.includes(key)) {
     return;
@@ -216,14 +219,20 @@ async function init(name, patchPath, patchIndex, receivedPort, receivedControlle
 
 };
 
-
-function _getPorts() {
-
+function _setMidiDevice(port) {
+  const client = new Client('127.0.0.1', 3333);
+  client.send('/config/port', port, () => client.close());
 }
 
-function _getDevices() {
+function _setController(controller) {
+  const client = new Client('127.0.0.1', 3333);
+  client.send('/config/controller', controller, () => client.close());
+}
 
-};
+function _setConfig(configFilename) {
+  const client = new Client('127.0.0.1', 3333);
+  client.send('/config/filename', configFilename, () => client.close());
+}
 
 // Create patch boxes and init fader values
 async function createTrack(config) {

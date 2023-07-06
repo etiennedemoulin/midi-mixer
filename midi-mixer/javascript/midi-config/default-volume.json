@@ -1,0 +1,47 @@
+[
+  {
+    channel: 0,
+    name: 'master_lvl',
+    type: 'volume',
+  },
+  {
+    channel: 1,
+    name: 'channel-1',
+    type: 'volume',
+  },
+  {
+    channel: 2,
+    name: 'channel-2',
+    type: 'volume',
+  },
+  {
+    channel: 3,
+    name: 'channel-3',
+    type: 'volume',
+  },
+  {
+    channel: 4,
+    name: 'channel-4',
+    type: 'volume',
+  },
+  {
+    channel: 5,
+    name: 'channel-5',
+    type: 'volume',
+  },
+  {
+    channel: 6,
+    name: 'channel-6',
+    type: 'volume',
+  },
+  {
+    channel: 7,
+    name: 'channel-7',
+    type: 'volume',
+  },
+  {
+    channel: 8,
+    name: 'channel-8',
+    type: 'volume',
+  },
+]

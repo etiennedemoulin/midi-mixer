@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 609.0, 130.0, 1037.0, 584.0 ],
+		"rect" : [ 34.0, 100.0, 1444.0, 769.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -41,7 +41,7 @@
 		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
-					"id" : "obj-2",
+					"id" : "obj-3",
 					"maxclass" : "newobj",
 					"numinlets" : 0,
 					"numoutlets" : 0,
@@ -56,7 +56,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1037.0, 558.0 ],
+						"rect" : [ 34.0, 126.0, 1444.0, 743.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 13.0,
@@ -87,75 +87,369 @@
 						"assistshowspatchername" : 0,
 						"boxes" : [ 							{
 								"box" : 								{
-									"color" : [ 1.0, 0.968627450980392, 0.0, 1.0 ],
-									"id" : "obj-20",
+									"id" : "obj-4",
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 1,
-									"outlettype" : [ "bang" ],
-									"patching_rect" : [ 748.0, 170.0, 68.0, 23.0 ],
-									"text" : "midi.mixer"
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 153.0, 220.0, 75.0, 23.0 ],
+									"text" : "loadmess 1"
 								}
 
 							}
 , 							{
 								"box" : 								{
-									"id" : "obj-36",
+									"id" : "obj-1",
+									"maxclass" : "jweb",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 637.0, 182.0, 599.0, 367.0 ],
+									"rendermode" : 0,
+									"url" : "localhost:8000"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-26",
 									"maxclass" : "newobj",
 									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 487.472488403320312, 526.0, 78.0, 23.0 ],
-									"text" : "s master_lvl"
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 222.5, 350.0, 97.0, 23.0 ],
+									"text" : "prepend device"
 								}
 
 							}
 , 							{
 								"box" : 								{
-									"id" : "obj-35",
+									"fontface" : 0,
+									"fontname" : "Arial",
+									"fontsize" : 13.0,
+									"id" : "obj-18",
+									"items" : [ "AU DLS Synth 1", ",", "IAC Driver Bus 1", ",", "Euphonix MIDI Euphonix Port 1", ",", "Euphonix MIDI Euphonix Port 2", ",", "Euphonix MIDI Euphonix Port 3", ",", "Euphonix MIDI Euphonix Port 4", ",", "Euphonix MIDI Euphonix Port 5", ",", "Euphonix MIDI Euphonix Port 6", ",", "Euphonix MIDI Euphonix Port 7", ",", "Euphonix MIDI Euphonix Port 8", ",", "Euphonix MIDI Euphonix Port 9", ",", "Euphonix MIDI Euphonix Port 10", ",", "Euphonix MIDI Euphonix Port 11", ",", "Euphonix MIDI Euphonix Port 12", ",", "from Max 1", ",", "from Max 2" ],
+									"maxclass" : "umenu",
+									"numinlets" : 1,
+									"numoutlets" : 3,
+									"outlettype" : [ "int", "", "" ],
+									"parameter_enable" : 0,
+									"patching_rect" : [ 153.0, 315.0, 158.0, 23.0 ]
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"fontname" : "Arial",
+									"fontsize" : 13.0,
+									"id" : "obj-21",
+									"maxclass" : "newobj",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 153.0, 265.0, 55.0, 23.0 ],
+									"text" : "midiinfo"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-17",
+									"items" : [ "ssl", ",", "raditek", ",", "neve", ",", "mackie" ],
+									"maxclass" : "umenu",
+									"numinlets" : 1,
+									"numoutlets" : 3,
+									"outlettype" : [ "int", "", "" ],
+									"parameter_enable" : 0,
+									"patching_rect" : [ 491.0, 339.0, 100.0, 23.0 ]
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-16",
 									"maxclass" : "message",
 									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 472.972488403320312, 330.0, 44.0, 23.0 ],
-									"text" : "set $1"
+									"patching_rect" : [ 531.5, 373.0, 80.0, 23.0 ],
+									"text" : "controller $1"
 								}
 
 							}
 , 							{
 								"box" : 								{
-									"id" : "obj-33",
-									"lastchannelcount" : 0,
-									"maxclass" : "live.gain~",
+									"id" : "obj-14",
+									"items" : [ "help-1.json", ",", "help-2.json" ],
+									"maxclass" : "umenu",
+									"numinlets" : 1,
+									"numoutlets" : 3,
+									"outlettype" : [ "int", "", "" ],
+									"parameter_enable" : 0,
+									"patching_rect" : [ 344.5, 339.0, 100.0, 23.0 ]
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-13",
+									"maxclass" : "message",
 									"numinlets" : 2,
-									"numoutlets" : 5,
-									"outlettype" : [ "signal", "signal", "", "float", "list" ],
-									"parameter_enable" : 1,
-									"patching_rect" : [ 472.972488403320312, 370.0, 48.0, 136.0 ],
-									"saved_attribute_attributes" : 									{
-										"valueof" : 										{
-											"parameter_longname" : "live.gain~",
-											"parameter_mmax" : 6.0,
-											"parameter_mmin" : -70.0,
-											"parameter_shortname" : "live.gain~",
-											"parameter_type" : 0,
-											"parameter_unitstyle" : 4
-										}
-
-									}
-,
-									"varname" : "live.gain~"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-32",
-									"maxclass" : "newobj",
-									"numinlets" : 0,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 472.972488403320312, 295.0, 76.0, 23.0 ],
-									"text" : "r master_lvl"
+									"patching_rect" : [ 385.0, 373.0, 61.0, 23.0 ],
+									"text" : "config $1"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
+									"bubbleside" : 2,
+									"id" : "obj-9",
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 871.0, 116.0, 163.0, 40.0 ],
+									"text" : "jweb @url localhost:8000"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-8",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 637.0, 137.0, 45.0, 23.0 ],
+									"text" : "reload"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-12",
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 10.0, 346.0, 29.5, 23.0 ],
+									"text" : "edit"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
+									"id" : "obj-30",
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 49.5, 346.0, 91.0, 25.0 ],
+									"text" : "open editor"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"bubble" : 1,
+									"bubbleside" : 2,
+									"id" : "obj-19",
+									"linecount" : 2,
+									"maxclass" : "comment",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 25.0, 386.0, 155.0, 55.0 ],
+									"text" : "double-click to see the state"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"color" : [ 1.0, 0.968627450980392, 0.0, 1.0 ],
+									"id" : "obj-3",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 10.0, 449.0, 79.0, 23.0 ],
+									"text" : "s midi-mixer"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"border" : 0,
+									"filename" : "helpdetails.js",
+									"id" : "obj-2",
+									"ignoreclick" : 1,
+									"jsarguments" : [ "midi.mixer" ],
+									"maxclass" : "jsui",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"parameter_enable" : 0,
+									"patching_rect" : [ 10.0, 10.0, 620.0, 125.0 ]
+								}
+
+							}
+ ],
+						"lines" : [ 							{
+								"patchline" : 								{
+									"destination" : [ "obj-3", 0 ],
+									"source" : [ "obj-12", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-3", 0 ],
+									"source" : [ "obj-13", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-13", 0 ],
+									"source" : [ "obj-14", 1 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-3", 0 ],
+									"source" : [ "obj-16", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-16", 0 ],
+									"source" : [ "obj-17", 1 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-26", 0 ],
+									"source" : [ "obj-18", 1 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-18", 0 ],
+									"source" : [ "obj-21", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-3", 0 ],
+									"source" : [ "obj-26", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-21", 0 ],
+									"source" : [ "obj-4", 0 ]
+								}
+
+							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-1", 0 ],
+									"source" : [ "obj-8", 0 ]
+								}
+
+							}
+ ]
+					}
+,
+					"patching_rect" : [ 44.0, 109.0, 87.0, 22.0 ],
+					"saved_object_attributes" : 					{
+						"description" : "",
+						"digest" : "",
+						"fontsize" : 13.0,
+						"globalpatchername" : "",
+						"tags" : ""
+					}
+,
+					"text" : "p configuration",
+					"varname" : "basic_tab[2]"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-2",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 0,
+					"patcher" : 					{
+						"fileversion" : 1,
+						"appversion" : 						{
+							"major" : 8,
+							"minor" : 5,
+							"revision" : 2,
+							"architecture" : "x64",
+							"modernui" : 1
+						}
+,
+						"classnamespace" : "box",
+						"rect" : [ 0.0, 26.0, 1444.0, 743.0 ],
+						"bglocked" : 0,
+						"openinpresentation" : 0,
+						"default_fontsize" : 13.0,
+						"default_fontface" : 0,
+						"default_fontname" : "Arial",
+						"gridonopen" : 1,
+						"gridsize" : [ 5.0, 5.0 ],
+						"gridsnaponopen" : 1,
+						"objectsnaponopen" : 1,
+						"statusbarvisible" : 2,
+						"toolbarvisible" : 1,
+						"lefttoolbarpinned" : 0,
+						"toptoolbarpinned" : 0,
+						"righttoolbarpinned" : 0,
+						"bottomtoolbarpinned" : 0,
+						"toolbars_unpinned_last_save" : 0,
+						"tallnewobj" : 0,
+						"boxanimatetime" : 200,
+						"enablehscroll" : 1,
+						"enablevscroll" : 1,
+						"devicewidth" : 0.0,
+						"description" : "",
+						"digest" : "",
+						"tags" : "",
+						"style" : "",
+						"subpatcher_template" : "",
+						"showontab" : 1,
+						"assistshowspatchername" : 0,
+						"boxes" : [ 							{
+								"box" : 								{
+									"id" : "obj-22",
+									"linecount" : 2,
+									"maxclass" : "message",
+									"numinlets" : 2,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 753.0, 140.0, 177.0, 38.0 ],
+									"text" : ";\rmidi-mixer config default.json"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-20",
+									"maxclass" : "jweb",
+									"numinlets" : 1,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 753.0, 204.0, 599.0, 367.0 ],
+									"rendermode" : 0,
+									"url" : "localhost:8000"
 								}
 
 							}
@@ -485,44 +779,6 @@
 									"outlettype" : [ "" ],
 									"patching_rect" : [ 71.0, 293.0, 52.0, 23.0 ],
 									"text" : "r midi-2"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-26",
-									"maxclass" : "message",
-									"numinlets" : 2,
-									"numoutlets" : 1,
-									"outlettype" : [ "" ],
-									"patching_rect" : [ 766.0, 355.0, 50.0, 23.0 ],
-									"text" : "15.1"
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-24",
-									"maxclass" : "multislider",
-									"numinlets" : 1,
-									"numoutlets" : 2,
-									"outlettype" : [ "", "" ],
-									"parameter_enable" : 0,
-									"patching_rect" : [ 818.0, 396.0, 186.0, 141.0 ],
-									"setminmax" : [ 0.0, 100.0 ],
-									"setstyle" : 3
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-21",
-									"maxclass" : "newobj",
-									"numinlets" : 1,
-									"numoutlets" : 5,
-									"outlettype" : [ "", "", "", "", "" ],
-									"patching_rect" : [ 818.0, 318.0, 186.0, 23.0 ],
-									"text" : "spat5.cpu @initwith \"/rate 100\""
 								}
 
 							}
@@ -868,22 +1124,6 @@
 							}
 , 							{
 								"patchline" : 								{
-									"destination" : [ "obj-24", 0 ],
-									"order" : 0,
-									"source" : [ "obj-21", 0 ]
-								}
-
-							}
-, 							{
-								"patchline" : 								{
-									"destination" : [ "obj-26", 1 ],
-									"order" : 1,
-									"source" : [ "obj-21", 0 ]
-								}
-
-							}
-, 							{
-								"patchline" : 								{
 									"destination" : [ "obj-27", 0 ],
 									"source" : [ "obj-28", 0 ]
 								}
@@ -907,27 +1147,6 @@
 								"patchline" : 								{
 									"destination" : [ "obj-68", 0 ],
 									"source" : [ "obj-31", 0 ]
-								}
-
-							}
-, 							{
-								"patchline" : 								{
-									"destination" : [ "obj-35", 0 ],
-									"source" : [ "obj-32", 0 ]
-								}
-
-							}
-, 							{
-								"patchline" : 								{
-									"destination" : [ "obj-36", 0 ],
-									"source" : [ "obj-33", 2 ]
-								}
-
-							}
-, 							{
-								"patchline" : 								{
-									"destination" : [ "obj-33", 0 ],
-									"source" : [ "obj-35", 0 ]
 								}
 
 							}
@@ -1081,7 +1300,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 40.0, 116.0, 74.0, 22.0 ],
+					"patching_rect" : [ 57.0, 135.0, 74.0, 22.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -1131,7 +1350,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 609.0, 156.0, 1037.0, 558.0 ],
+						"rect" : [ 0.0, 26.0, 1444.0, 743.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 13.0,
@@ -1162,12 +1381,24 @@
 						"assistshowspatchername" : 0,
 						"boxes" : [ 							{
 								"box" : 								{
+									"id" : "obj-1",
+									"maxclass" : "newobj",
+									"numinlets" : 0,
+									"numoutlets" : 1,
+									"outlettype" : [ "" ],
+									"patching_rect" : [ 27.0, 287.0, 76.0, 23.0 ],
+									"text" : "r midi-mixer"
+								}
+
+							}
+, 							{
+								"box" : 								{
 									"id" : "obj-20",
 									"linecount" : 3,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 36.0, 372.0, 87.0, 50.0 ],
+									"patching_rect" : [ 36.0, 359.0, 87.0, 50.0 ],
 									"text" : "bang when server is ready"
 								}
 
@@ -1576,23 +1807,12 @@
 							}
 , 							{
 								"box" : 								{
-									"id" : "obj-11",
-									"maxclass" : "comment",
-									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 194.0, 423.0, 150.0, 21.0 ],
-									"text" : "@port @controller"
-								}
-
-							}
-, 							{
-								"box" : 								{
 									"id" : "obj-6",
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 194.0, 388.0, 267.0, 21.0 ],
-									"text" : "config file has to be stored next to your patch"
+									"patching_rect" : [ 10.0, 438.0, 308.0, 21.0 ],
+									"text" : "configurationFile has to be stored next to your patch"
 								}
 
 							}
@@ -1628,7 +1848,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 10.0, 167.0, 488.0, 36.0 ],
+									"patching_rect" : [ 10.0, 167.0, 490.0, 36.0 ],
 									"text" : "If severals instances of midi.mixer are instanciated, the server is loaded only on the first one."
 								}
 
@@ -1654,7 +1874,7 @@
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 25.0, 263.0, 155.0, 55.0 ],
+									"patching_rect" : [ 115.0, 262.0, 155.0, 55.0 ],
 									"text" : "double-click to see the state"
 								}
 
@@ -1667,7 +1887,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "bang" ],
-									"patching_rect" : [ 10.0, 326.0, 138.0, 23.0 ],
+									"patching_rect" : [ 10.0, 326.0, 250.0, 23.0 ],
 									"text" : "midi.mixer default.json"
 								}
 
@@ -1700,12 +1920,19 @@
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
 									"parameter_enable" : 0,
-									"patching_rect" : [ 159.0, 326.0, 235.027511596679688, 39.0 ]
+									"patching_rect" : [ 264.0, 326.0, 235.027511596679688, 39.0 ]
 								}
 
 							}
  ],
 						"lines" : [ 							{
+								"patchline" : 								{
+									"destination" : [ "obj-3", 0 ],
+									"source" : [ "obj-1", 0 ]
+								}
+
+							}
+, 							{
 								"patchline" : 								{
 									"destination" : [ "obj-3", 0 ],
 									"source" : [ "obj-12", 0 ]
@@ -1937,7 +2164,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1037.0, 558.0 ],
+						"rect" : [ 0.0, 26.0, 1444.0, 743.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -1986,7 +2213,6 @@
  ],
 		"lines" : [  ],
 		"parameters" : 		{
-			"obj-2::obj-33" : [ "live.gain~", "live.gain~", 0 ],
 			"obj-6::obj-33" : [ "live.gain~[1]", "live.gain~", 0 ],
 			"parameterbanks" : 			{
 				"0" : 				{
@@ -2062,10 +2288,6 @@
 				"bootpath" : "C74:/packages/Node for Max/patchers/debug-monitor",
 				"type" : "TEXT",
 				"implicit" : 1
-			}
-, 			{
-				"name" : "spat5.cpu.mxo",
-				"type" : "iLaX"
 			}
 , 			{
 				"name" : "spat5.hostinfos.mxo",

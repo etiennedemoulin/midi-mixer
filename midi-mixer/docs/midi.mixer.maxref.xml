@@ -50,6 +50,33 @@
 				Open editor for the configuration file.
 			</description>
 		</method>
+		<method name="config">
+			<arglist />
+			<digest>
+				Change configuration file.
+			</digest>
+			<description>
+				Select a new configuration file, should live next to your patch.
+			</description>
+		</method>
+		<method name="controller">
+			<arglist />
+			<digest>
+				Change your fader mapping.
+			</digest>
+			<description>
+				Ask server for selected fader mapping.
+			</description>
+		</method>
+		<method name="device">
+			<arglist />
+			<digest>
+				Change Midi-In and Midi-Out device
+			</digest>
+			<description>
+				Ask server to change Midi-In and Midi-Out configuration
+			</description>
+		</method>
 	</methodlist>
 
 	<!--ATTRIBUTES-->

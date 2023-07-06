@@ -49,6 +49,8 @@ async function main($container) {
   const globals = await client.stateManager.attach('globals');
   const midi = await client.stateManager.attach('midi');
 
+  globals.onUpdate(() => { requestUpdate() });
+
   const $layout = createLayout(client, $container);
 
   let view = 'mixer';
