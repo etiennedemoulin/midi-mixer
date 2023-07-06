@@ -34,11 +34,22 @@ console.log(`
 --------------------------------------------------------
 `);
 
+
+// catches uncaught exceptions
+process.on('uncaughtException', function() {
+  process.send('error');
+});
+
+// catch KILL MAX
+// process.on('SIGTERM', );
+
 /**
  * Initialisation process
  */
 const server = new Server(config);
 const tracks = [];
+
+let createdSymlinkFile;
 
 // configure the server for usage within this application template
 server.useDefaultApplicationTemplate();
@@ -182,7 +193,7 @@ async function updateTracks() {
         }, { source: 'config' });
         // create max track
       }
-
+      // create track, disabled or enabled
       createMaxTrack(tracks[i]);
 
     }
@@ -190,7 +201,7 @@ async function updateTracks() {
     // console.log(`- delete track from ${maxTrackIndex + 1} to ${tracks.length - 1}`);
     for (let i = tracks.length - 1; i > maxTrackIndex; i--) {
       const track = tracks.find(s => s.get('channel') === i);
-      // delete max track
+      // delete tracks if state is deleted
       removeMaxTrack(track);
       await track.delete();
       tracks.pop();
@@ -207,17 +218,22 @@ async function updateTracks() {
         name: null,
         disabled: true,
       }, {source:'config'});
+      // set name to null to pass from enabled -> disabled state
       nameMaxTrack(track);
     }
   });
 
   // apply updates on changed state
   channels.forEach(async channel => {
-    // console.log(`update channel ${track.get('channel')}`);
     const track = tracks.find(s => s.get('channel') === channel);
+    // console.log(`update channel ${track.get('channel')}`);
     const midiConfigLine = midiConfig.find(f => f.channel === channel);
     const updates = parseTrackConfig(midiConfigLine);
     await track.set(updates, { source:'config' });
+    // set state from disabled -> enabled
+    if (track.get('disabled') === false) {
+      nameMaxTrack(track);
+    }
 
     if ([undefined, -Infinity, null].includes(midiConfigLine.default)) {
       if (midiConfigLine.type === 'volume') {
@@ -232,8 +248,6 @@ async function updateTracks() {
     } else {
       await track.set({ faderUser: midiConfigLine.default }, { source:'config' });
     }
-
-    nameMaxTrack(track);
   });
   if (midiOutPort) {
     setMixerView(globals.get('activePage'), midiOutPort, tracks);
@@ -243,11 +257,9 @@ async function updateTracks() {
 filesystem.onUpdate(updateTracks, true);
 filesystem.onUpdate(updates => {
   const { events } = updates;
-  // console.log(events);
   if (events[0] && events[0].type === 'create') {
-    // console.log("update config !!! " + events[0].node.name);
-    // console.log("symlink is not tracked...........");
-    // globals.set({ configFilename: events[0].node }, { source:'config' });
+    console.log("update config");
+    globals.set({ configFilename: events[0].node }, { source:'config' });
   }
 });
 
@@ -353,9 +365,10 @@ oscServer.on('message', async function (msg) {
       const sourcePath = msg[1];
       const filename = sourcePath.split('/').slice(-1)[0];
       const destPath = path.join(process.cwd(), `./midi-config/linked/${filename}`);
-      // await fs.unlink(destPath);
+      createdSymlinkFile = destPath;
+      // create symlink to watch for changes
       await fs.symlink(sourcePath, destPath);
-      globals.set({ configFilename: { path: `midi-config/linked/${filename}`, relPath: `linked/${filename}`, name: filename } }, { source:'config' });
+      // console.log("create symlink " + destPath);
     } else if (command === 'port') {
       // make sure received port is in selectMidiIn list and in selectMidiOut list !
       const selectMidiIn = midi.get('selectMidiIn');
@@ -430,24 +443,11 @@ function onMidiReceive(msg) {
 const oscClient = new OscClient('127.0.0.1', 3334);
 oscClient.send(new Bundle(['/ready', 0]), () => oscClient.close());
 
+// remove created symlink on close
+process.on('SIGTERM', async function() {
+  if (createdSymlinkFile) {
+    await fs.remove(createdSymlinkFile);
+  }
+  process.exit();
+});
 
-async function exitHandler(options, exitCode) {
-  // await fs.emptyDir(path.join(process.cwd(), './midi-config/linked/'));
-  if (options.cleanup) console.log('clean');
-  if (exitCode || exitCode === 0) console.log(exitCode);
-  if (options.exit) process.exit();
-}
-
-//do something when app is closing
-process.on('exit', exitHandler.bind(null,{cleanup:true}));
-
-//catches ctrl+c event
-process.on('SIGINT', exitHandler.bind(null, {exit:true}));
-
-// catches "kill pid" (for example: nodemon restart)
-process.on('SIGUSR1', exitHandler.bind(null, {exit:true}));
-process.on('SIGUSR2', exitHandler.bind(null, {exit:true}));
-process.on('SIGTERM', exitHandler.bind(null, {exit:true}));
-
-//catches uncaught exceptions
-process.on('uncaughtException', exitHandler.bind(null, {exit:true}));

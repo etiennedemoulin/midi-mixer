@@ -23,7 +23,7 @@ Max.addHandlers({
 });
 
 // START SOUNDWORKS
-const child = fork('./src/server/index.js');
+const child = fork('./.build/server/index.js');
 
 process.on('exit', function() {
   child.kill('SIGTERM');
@@ -33,6 +33,16 @@ process.on('error', function() {
   child.kill('SIGTERM');
 });
 
+process.on('uncaughtException', function() {
+  child.kill('SIGTERM');
+});
+
+child.on('message', function (message) {
+  if (message === 'error') {
+    console.log("> node script will stop");
+    process.exit();
+  }
+});
 
 // ____OSC
 
@@ -60,7 +70,8 @@ server.on('bundle', async (msg) => {
         const channel = parseInt(address[1]);
         // console.log("remove track " + channel);
         const index = config.findIndex(e => e.channel === channel);
-        if (config[index].name !== null) {
+        if (config[index].name) {
+          // delete track only if exist
           await deleteTrack([config[index]], true);
         }
         config.splice(index, 1);
@@ -69,10 +80,10 @@ server.on('bundle', async (msg) => {
         const name = e[1];
         // console.log("name track " + channel);
         const index = config.findIndex(e => e.channel === channel);
-        if (config[index].name !== name) {
+        if (index !== -1 && name !== config[index].name) {
           await deleteTrack([config[index]], false);
           config[index].name = name;
-          if (name !== null) {
+          if (config[index].name !== null) {
             await createTrack([config[index]]);
           }
         }
@@ -110,7 +121,9 @@ server.on('bundle', async (msg) => {
         client.send('/config/controller', controller, () => client.close());
       }
       Max.outlet("ready");
-    };
+    } else if (trackFlag === 'exit') {
+      process.exit();
+    }
   });
 });
 

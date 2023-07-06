@@ -1,11 +1,7 @@
 [
   {
     channel: 2,
-    name: 'midi-2',
-    type: 'linear',
-    range: [
-      10,
-      1,
-    ],
+    name: 'master_lvl',
+    type: 'volume',
   }
 ]
