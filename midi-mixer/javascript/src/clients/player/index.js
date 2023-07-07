@@ -49,7 +49,9 @@ async function main($container) {
   const globals = await client.stateManager.attach('globals');
   const midi = await client.stateManager.attach('midi');
 
-  globals.onUpdate(() => { requestUpdate() });
+  globals.onUpdate(() => {
+    header.render();
+  });
 
   const $layout = createLayout(client, $container);
 
@@ -67,56 +69,62 @@ async function main($container) {
     ></mixer-editor>
   `;
 
-  $layout.addComponent(html`
-    <header>
-      <sc-icon
-        icon="gear"
-        @input=${e => {
-          view = view === 'editor' ? 'mixer' : 'editor';
+  const header = {
+    render() {
+      return html`
+        <header>
+          <sc-icon
+            icon="gear"
+            @input=${e => {
+              view = view === 'editor' ? 'mixer' : 'editor';
 
-          switch (view) {
-            case 'editor': {
-              $layout.deleteComponent(mixerView);
-              $layout.addComponent(editorView);
-              break;
-            }
-          case 'mixer': {
-              $layout.deleteComponent(editorView);
-              $layout.addComponent(mixerView);
-              break;
-            }
-          }
-        }}
-      >config</sc-icon>
+              switch (view) {
+                case 'editor': {
+                  $layout.deleteComponent(mixerView);
+                  $layout.addComponent(editorView);
+                  break;
+                }
+              case 'mixer': {
+                  $layout.deleteComponent(editorView);
+                  $layout.addComponent(mixerView);
+                  break;
+                }
+              }
+            }}
+          >config</sc-icon>
 
-      <div class="midi-controls">
-        <div>
-          <sc-text readonly>Midi In</sc-text>
-          <sc-select
-            value=${midi.get('midiInName')}
-            .options=${midi.get('selectMidiIn')}
-            @change=${e => midi.set({ midiInName: e.target.value }, { source:'web' })}
-          ></sc-select>
-        </div>
-        <div>
-          <sc-text readonly>Midi Out</sc-text>
-          <sc-select
-            value=${midi.get('midiOutName')}
-            .options=${midi.get('selectMidiOut')}
-            @change=${e => midi.set({ midiOutName: e.target.value }, { source:'web' })}
-          ></sc-select>
-        </div>
-        <div>
-          <sc-text readonly>Mapping</sc-text>
-          <sc-select
-            value=${globals.get('controllerName')}
-            .options=${globals.get('selectControllers')}
-            @change=${e => globals.set({ controllerName: e.target.value }, { source: 'web' })}
-          ></sc-select>
-        </div>
-      </div>
-    </header>
-  `);
+          <div class="midi-controls">
+            <div>
+              <sc-text readonly>Midi In</sc-text>
+              <sc-select
+                value=${midi.get('midiInName')}
+                .options=${midi.get('selectMidiIn')}
+                @change=${e => midi.set({ midiInName: e.target.value }, { source:'web' })}
+              ></sc-select>
+            </div>
+            <div>
+              <sc-text readonly>Midi Out</sc-text>
+              <sc-select
+                value=${midi.get('midiOutName')}
+                .options=${midi.get('selectMidiOut')}
+                @change=${e => midi.set({ midiOutName: e.target.value }, { source:'web' })}
+              ></sc-select>
+            </div>
+            <div>
+              <sc-text readonly>Mapping</sc-text>
+              <sc-select
+                value=${globals.get('controllerName')}
+                .options=${globals.get('selectControllers')}
+                @change=${e => globals.set({ controllerName: e.target.value }, { source: 'web' })}
+              ></sc-select>
+            </div>
+          </div>
+        </header>
+      `;
+    },
+  }
+
+  $layout.addComponent(header);
 
   if (view === 'mixer') {
     $layout.addComponent(mixerView);

@@ -258,7 +258,6 @@ filesystem.onUpdate(updateTracks, true);
 filesystem.onUpdate(updates => {
   const { events } = updates;
   if (events[0] && events[0].type === 'create') {
-    console.log("update config");
     globals.set({ configFilename: events[0].node }, { source:'config' });
   }
 });
@@ -368,7 +367,9 @@ oscServer.on('message', async function (msg) {
       createdSymlinkFile = destPath;
       // create symlink to watch for changes
       await fs.remove(destPath);
-      await fs.symlink(sourcePath, destPath);
+      setTimeout(async () => {
+        await fs.symlink(sourcePath, destPath);
+      }, 500);
       // console.log("create symlink " + destPath);
     } else if (command === 'port') {
       // make sure received port is in selectMidiIn list and in selectMidiOut list !
