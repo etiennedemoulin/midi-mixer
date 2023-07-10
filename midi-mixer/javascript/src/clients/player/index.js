@@ -50,8 +50,12 @@ async function main($container) {
   const midi = await client.stateManager.attach('midi');
 
   globals.onUpdate(() => {
-    header.render();
+    $layout.requestUpdate();
   });
+
+  midi.onUpdate(() => {
+    $layout.requestUpdate();
+  })
 
   const $layout = createLayout(client, $container);
 

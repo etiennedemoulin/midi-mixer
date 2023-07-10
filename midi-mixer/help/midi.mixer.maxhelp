@@ -57,7 +57,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 1444.0, 743.0 ],
+						"rect" : [ 34.0, 126.0, 1444.0, 743.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 13.0,
@@ -156,7 +156,7 @@
 , 							{
 								"box" : 								{
 									"id" : "obj-17",
-									"items" : [ "ssl", ",", "raditek", ",", "neve", ",", "mackie" ],
+									"items" : [ "mackie", ",", "ssl", ",", "raditek", ",", "neve" ],
 									"maxclass" : "umenu",
 									"numinlets" : 1,
 									"numoutlets" : 3,
@@ -1438,7 +1438,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 34.0, 126.0, 1444.0, 743.0 ],
+						"rect" : [ 0.0, 26.0, 1444.0, 743.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 13.0,
