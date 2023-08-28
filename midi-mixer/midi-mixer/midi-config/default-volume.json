@@ -1,0 +1,48 @@
+[
+  {
+    channel: 0,
+    name: 'master_lvl',
+    type: 'volume',
+  },
+  {
+    channel: 1,
+    name: 'midi-1',
+    type: 'volume',
+    oscAddress: '/bus/1/gain',
+  },
+  {
+    channel: 2,
+    name: 'midi-2',
+    type: 'volume',
+  },
+  {
+    channel: 3,
+    name: 'midi-3',
+    type: 'volume',
+  },
+  {
+    channel: 4,
+    name: 'midi-4',
+    type: 'volume',
+  },
+  {
+    channel: 5,
+    name: 'midi-5',
+    type: 'volume',
+  },
+  {
+    channel: 6,
+    name: 'midi-6',
+    type: 'volume',
+  },
+  {
+    channel: 7,
+    name: 'midi-7',
+    type: 'volume',
+  },
+  {
+    channel: 8,
+    name: 'midi-8',
+    type: 'volume',
+  },
+]

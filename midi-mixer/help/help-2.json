@@ -1,8 +1,0 @@
-[
-  {
-    channel: 2,
-    name: 'help-chan-2',
-    type: 'linear',
-    range: [10, 2],
-  }
-]

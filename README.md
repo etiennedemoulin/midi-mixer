@@ -2,26 +2,18 @@
 Map your midi controller  
 Utility to map send and receive objects with a MIDI controller. A json file is used to configure the object.  
 Support multiple pages, screen, fader touch and diffrent fader mappings are integrated.  
+This is `no-max` branch.  
 
 # Installing
-Download midi-mixer.zip from [release](https://github.com/collective-soundworks/soundworks-max/releases)  
-Unzip the package and copy the resulting directory in `~/Documents/Max 8/Library`  
-Run `xattr -d -r com.apple.quarantine "~/Documents/Max 8/Library/midi-mixer"`   
+Clone the repo, then `npm install && npm run dev`.  
 
 # Midi support
 The MIDI part of the software use the Mackie-Control protocol, compatible with plenty of MIDI device (BCF2000, XTouch, Asparion D400, Avid S1, etc..)  
 Please set up your midi device in Mackie-Control mode before using the software.  
 
 # Storing presets
-There is a folder to retrieve presets in `midi-mixer/javascript/midi-config`  
-Nevertheless, instanciating a `midi-mixer` object with a config filename will link your config file, stored next to your patch.  
+There is a folder to retrieve presets in `midi-mixer/javascript/midi-config` 
 
-
-# Compiling from sources
-Clone the repo, simply `npm install && npm run build` into `midi-mixer/javascript` folder.  
-
-# Running outside of Max
-`cd midi-mixer/javascript` and `npm run dev`  
 
 # Using it with other music software with OSC (puredata, supercollider)
 Follow the `Running outside of Max` section  

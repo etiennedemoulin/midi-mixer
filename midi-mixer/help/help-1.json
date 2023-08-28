@@ -1,8 +1,0 @@
-[
-  {
-    channel: 1,
-    name: 'help-chan-1',
-    type: 'volume',
-    default: 0,
-  }
-]
