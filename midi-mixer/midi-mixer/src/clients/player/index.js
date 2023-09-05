@@ -83,7 +83,7 @@ async function main($container) {
       return html`
         <header>
           <sc-icon
-            icon="gear"
+            type="gear"
             @input=${e => {
               view = view === 'editor' ? 'mixer' : 'editor';
 
@@ -104,7 +104,7 @@ async function main($container) {
 
           <div class="midi-controls">
             <div>
-              <sc-text readonly>Midi In</sc-text>
+              <sc-text>Midi In</sc-text>
               <sc-select
                 value=${midi.get('midiInName')}
                 .options=${midi.get('selectMidiIn')}
@@ -112,7 +112,7 @@ async function main($container) {
               ></sc-select>
             </div>
             <div>
-              <sc-text readonly>Midi Out</sc-text>
+              <sc-text>Midi Out</sc-text>
               <sc-select
                 value=${midi.get('midiOutName')}
                 .options=${midi.get('selectMidiOut')}
@@ -120,7 +120,7 @@ async function main($container) {
               ></sc-select>
             </div>
             <div>
-              <sc-text readonly>Mapping</sc-text>
+              <sc-text>Mapping</sc-text>
               <sc-select
                 value=${globals.get('controllerName')}
                 .options=${globals.get('selectControllers')}
@@ -128,14 +128,15 @@ async function main($container) {
               ></sc-select>
             </div>
             <div>
-              <sc-text readonly>OSC dest</sc-text>
+              <sc-text>OSC dest</sc-text>
               <sc-text
+                editable
                 value='${globals.get('oscDestination')}'
                 @change=${e => globals.set({ oscDestination: e.detail.value }, { source: 'web' })}
               ></sc-text>
             </div>
             <div>
-              <sc-text readonly>OSC send</sc-text>
+              <sc-text>OSC send</sc-text>
               <sc-number
                 integer
                 value=${globals.get('oscSendPort')}
@@ -143,7 +144,7 @@ async function main($container) {
               ></sc-number>
             </div>
             <div>
-              <sc-text readonly>OSC recv</sc-text>
+              <sc-text>OSC recv</sc-text>
               <sc-number
                 integer
                 value=${globals.get('oscReceivePort')}

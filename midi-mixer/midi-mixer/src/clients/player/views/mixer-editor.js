@@ -4,7 +4,7 @@ import JSON5 from 'json5';
 import '@ircam/sc-components/sc-text.js';
 import '@ircam/sc-components/sc-select.js';
 import '@ircam/sc-components/sc-editor.js';
-import '@ircam/sc-components/sc-file-tree.js';
+import '@ircam/sc-components/sc-filetree.js';
 
 class MixerEditor extends LitElement {
   static styles = css`
@@ -47,12 +47,11 @@ class MixerEditor extends LitElement {
     return html`
       <div>
         <p>${this.globals.get('configFilename').name}</p>
-        <sc-file-tree
-          width="200"
-          height="${height - 30 - 30}"
+        <sc-filetree
+          style="width:200px;height:${height - 30 - 30}"
           .value="${this.filesystem.getTree()}"
           @input=${e => this.globals.set({ configFilename: e.detail.value })}
-        ></sc-file-tree>
+        ></sc-filetree>
       </div>
       <sc-editor
         .value="${ this.globals.get('config') }"
