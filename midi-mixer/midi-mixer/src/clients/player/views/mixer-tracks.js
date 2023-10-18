@@ -37,6 +37,7 @@ class MixerTracks extends LitElement {
     p {
       margin: 0 0 2px;
       height: 20px;
+      color: #FFFFFF;
     }
 
     .name {
