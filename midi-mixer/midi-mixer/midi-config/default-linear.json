@@ -9,6 +9,7 @@
     name: 'midi-1',
     type: 'linear',
     oscAddress: '/track/1/gain',
+    default: 64,
     range: [
       0,
       127,
