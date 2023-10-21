@@ -48,7 +48,7 @@ class MixerEditor extends LitElement {
       <div>
         <p>${this.globals.get('configFilename').name}</p>
         <sc-filetree
-          style="width:200px;height:${height - 30 - 30}"
+          style="width:200px;height:${height - 30 - 30}px"
           .value="${this.filesystem.getTree()}"
           @input=${e => this.globals.set({ configFilename: e.detail.value })}
         ></sc-filetree>
