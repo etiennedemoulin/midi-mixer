@@ -265,6 +265,9 @@ async function updateTracks() {
       await track.set({ oscAddress: oscAddress }, { source: 'config'});
     }
   });
+
+  // https://github.com/etiennedemoulin/midi-mixer/issues/8 is here
+  // need to wait for the forEach loop to end
   if (midiOutPort) {
     setMixerView(globals.get('activePage'), midiOutPort, tracks);
   };

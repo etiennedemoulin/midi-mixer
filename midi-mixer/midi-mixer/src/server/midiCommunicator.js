@@ -62,7 +62,6 @@ function getValuesFromPage(activePage, faderUser) {
 
 // total update : 8 faders + 2 displays
 export async function setMixerView(activePage, midiOutPort, tracks) {
-
   for (let absChannel = (activePage * 8) + 1; absChannel <= (activePage + 1) * 8; absChannel++) {
     const track = tracks.find(t => t.get('channel') === absChannel);
     const relChannel = absToRelChannel(absChannel);

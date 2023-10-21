@@ -62,7 +62,7 @@ async function main($container) {
     $layout.requestUpdate();
   })
 
-  const $layout = createLayout(client, $container);
+  const $layout = createLayout(client, $container, globals);
 
   let view = 'mixer';
 

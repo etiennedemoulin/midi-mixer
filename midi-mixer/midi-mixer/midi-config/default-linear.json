@@ -6,7 +6,7 @@
   },
   {
     channel: 1,
-    name: 'midi-1',
+    name: 'pouet',
     type: 'linear',
     oscAddress: '/track/1/gain',
     default: 64,
@@ -70,7 +70,7 @@
     ],
   },
   {
-    channel: 8,
+    channel: 9,
     name: 'midi-8',
     type: 'linear',
     range: [
