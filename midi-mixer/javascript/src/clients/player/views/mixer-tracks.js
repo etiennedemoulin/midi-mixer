@@ -85,6 +85,8 @@ class MixerTracks extends LitElement {
         active: track.get('faderTouched'),
       };
 
+      const faderUser = Math.round(track.get('faderUser') * 100) / 100;
+
       return html`
         <div class="${classMap(classes)}">
           <div>
@@ -103,7 +105,7 @@ class MixerTracks extends LitElement {
               ?disabled=${track.get('disabled')}
               min=${track.get('faderRange') ? track.get('faderRange')[1][0] : 0}
               max=${track.get('faderRange') ? track.get('faderRange')[1][1] : 1}
-              .value=${track.get('faderUser')}
+              .value=${ faderUser }
               @input=${e => track.set({ faderUser: e.detail.value }, { source: 'web' })}
             ></sc-number>
             <div class="mute">

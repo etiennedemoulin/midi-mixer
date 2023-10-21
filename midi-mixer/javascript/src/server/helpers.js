@@ -13,7 +13,8 @@ function dBtoRaw(dB, transfertTable) {
 
 function rawtodB(raw, transfertTable) {
   const index = parseInt(raw * (transfertTable.length - 1));
-  const dB = Math.round(transfertTable[index] * 100) / 100;
+  // const dB = Math.round(transfertTable[index] * 100) / 100;
+  const dB = transfertTable[index];
   return dB;
 }
 
@@ -21,7 +22,8 @@ function rawtoLin(raw, range) {
   const sens = (range[1] > range[0]) ? 1 : -1;
   const amplitude = Math.abs(range[1] - range[0]);
   const lin = range[0] + sens * (raw * amplitude);
-  return (Math.round(lin * 100) / 100);
+  return lin;
+  // return (Math.round(lin * 100) / 100);
 }
 
 function linToRaw(lin, range) {

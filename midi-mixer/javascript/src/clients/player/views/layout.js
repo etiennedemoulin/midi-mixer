@@ -2,6 +2,7 @@ import { LitElement, html, render, css, nothing } from 'lit';
 
 import '../../components/sw-infos-button.js';
 import '../../components/sw-credits.js';
+import '@ircam/sc-components/sc-number.js';
 
 /**
  * This simple layout is provided for convenience, feel free to edit or even
@@ -60,12 +61,13 @@ class SimpleLayout extends LitElement {
 
 customElements.define('simple-layout', SimpleLayout);
 
-export default function createLayout(client, $container) {
+export default function createLayout(client, $container, globals) {
   const layoutId = `${client.role}-${client.id}`;
 
   render(html`
     <simple-layout
       .client="${client}"
+      .globals="${globals}"
       id="${layoutId}"
     ></simple-layout>
   `, $container);

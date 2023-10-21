@@ -4,7 +4,7 @@ import JSON5 from 'json5';
 import '@ircam/sc-components/sc-text.js';
 import '@ircam/sc-components/sc-select.js';
 import '@ircam/sc-components/sc-editor.js';
-import '@ircam/sc-components/sc-file-tree.js';
+import '@ircam/simple-components/sc-file-tree.js';
 
 class MixerEditor extends LitElement {
   static styles = css`

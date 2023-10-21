@@ -8,7 +8,6 @@
   "private": true,
   "scripts": {
     "build": "npm run clean && sass src/clients/components/css:.build/public/css && soundworks-build -b",
-    "build:production": "npm run clean && soundworks-build -b -m",
     "clean": "soundworks-build -D",
     "dev": "npm run build && (concurrently -i -p \"none\" \"npm run watch:inspect server\" \"soundworks-build -b -w\" \"npm run watch:sass\")",
     "postinstall": "soundworks-build -C",
@@ -20,12 +19,13 @@
   },
   "dependencies": {
     "@ircam/sc-components": "^3.0.0-alpha.1",
+    "@ircam/simple-components": "^2.5.0",
     "@soundworks/core": "^4.0.0-alpha.0",
     "@soundworks/helpers": "^1.0.0-alpha.5",
     "@soundworks/plugin-filesystem": "^2.0.0-alpha.1",
     "json5": "^2.2.3",
     "jzz": "^1.6.4",
-    "lit": "^2.2.2",
+    "lit": "^2.8.0",
     "lodash": "^4.17.21",
     "node-osc": "^8.0.11",
     "open": "^8.4.2",
