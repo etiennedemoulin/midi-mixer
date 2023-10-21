@@ -2,7 +2,6 @@ import { LitElement, html, render, css, nothing } from 'lit';
 
 import '../../components/sw-infos-button.js';
 import '../../components/sw-credits.js';
-import '@ircam/sc-components/sc-number.js';
 
 /**
  * This simple layout is provided for convenience, feel free to edit or even
@@ -55,11 +54,6 @@ class SimpleLayout extends LitElement {
         ${Array.from(this._components).map(comp => comp.render ? comp.render() : comp)}
         <!-- credits -->
         ${this._showCredits ? html`<sw-credits .client="${this.client}"></sw-credits>` : nothing}
-        <sc-number class="footer"
-          integer=true
-          readonly=true
-          value=${this.globals.get('activePage') + 1}
-        ></sc-number>
         <sw-infos-button @click="${this.toggleCredits}"></sw-infos-button>
     `;
   }
@@ -68,13 +62,12 @@ class SimpleLayout extends LitElement {
 customElements.define('simple-layout', SimpleLayout);
 
 
-export default function createLayout(client, $container, globals) {
+export default function createLayout(client, $container) {
   const layoutId = `${client.role}-${client.id}`;
 
   render(html`
     <simple-layout
       .client="${client}"
-      .globals="${globals}"
       id="${layoutId}"
     ></simple-layout>
   `, $container);

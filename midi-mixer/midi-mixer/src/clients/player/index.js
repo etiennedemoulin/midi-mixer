@@ -103,6 +103,11 @@ async function main($container) {
           >config</sc-icon>
 
           <div class="midi-controls">
+            <sc-number class="active-page"
+              integer=true
+              readonly=true
+              value=${globals.get('activePage') + 1}
+            ></sc-number>
             <div>
               <sc-text>Midi In</sc-text>
               <sc-select
