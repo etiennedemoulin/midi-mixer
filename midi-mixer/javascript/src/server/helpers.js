@@ -1,20 +1,51 @@
 import fs from 'fs';
 
+// function dBtoRaw(dB, transfertTable) {
+//   if (dB === -Infinity) {
+//     dB = transfertTable[0]
+//   }
+
+//   // find nearest dB value
+//   const nearestdB = transfertTable.reduce((prev, curr) => {
+//     return Math.abs(curr - dB) < Math.abs(prev - dB) ? curr : prev;
+//   });
+
+//   const index = transfertTable.findIndex(e => e === nearestdB);
+
+//   return (index / transfertTable.length);
+// }
+
 function dBtoRaw(dB, transfertTable) {
   if (dB === -Infinity) {
     dB = transfertTable[0]
   }
-  const nearestdB = transfertTable.reduce((a, b) => {
-    return Math.abs(b - dB) < Math.abs(a - dB) ? b : a;
+
+  // find nearest dB value
+  const nearestdB = transfertTable.reduce((prev, curr) => {
+    return Math.abs(curr - dB) < Math.abs(prev - dB) ? curr : prev;
   });
+
   const index = transfertTable.findIndex(e => e === nearestdB);
-  return (index / transfertTable.length);
+  const deltaWithTarget = dB - nearestdB;
+  const sens = deltaWithTarget > 0 ? 1 : -1;
+
+  const interpIndex = transfertTable[index+sens] ?
+    index + ( deltaWithTarget /
+      Math.abs(transfertTable[index + sens] - transfertTable[index])
+    ) : index;
+
+  const raw = interpIndex / transfertTable.length
+  return raw;
 }
 
+
 function rawtodB(raw, transfertTable) {
-  const index = parseInt(raw * (transfertTable.length - 1));
-  // const dB = Math.round(transfertTable[index] * 100) / 100;
-  const dB = transfertTable[index];
+  const interpIndex = raw * (transfertTable.length - 1);
+  const lowIndex = Math.floor(interpIndex);
+  const highIndex = Math.ceil(interpIndex);
+  const rawDist = interpIndex - lowIndex;
+  const dBDist = Math.abs(transfertTable[lowIndex] - transfertTable[highIndex]);
+  const dB = transfertTable[lowIndex] + dBDist * rawDist;
   return dB;
 }
 
