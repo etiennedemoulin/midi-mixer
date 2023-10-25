@@ -8,7 +8,9 @@
     channel: 1,
     name: 'midi-1',
     type: 'linear',
-    oscAddress: '/track/1/gain',
+    faderAddress: '/track/1/gain',
+    meterAddress: '/meter/1/user',
+    muteAddress: '/mute/1',
     default: 64,
     range: [
       0,

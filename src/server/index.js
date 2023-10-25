@@ -15,7 +15,7 @@ import { Server as OscServer, Client as OscClient, Bundle } from 'node-osc';
 import _ from 'lodash';
 import JSON5 from 'json5';
 
-import { userToRaw, rawToUser, getFaderRange, parseTrackConfig, rawToBytes, bytesToRaw, relToAbsChannel, absToRelChannel } from './helpers.js';
+import { userToRaw, rawToUser, getFaderRange, parseTrackConfig, rawToBytes, bytesToRaw, relToAbsChannel, absToRelChannel, dBtoRaw } from './helpers.js';
 import { trackSchema } from './schemas/tracks.js';
 import { globalsSchema } from './schemas/globals.js';
 import { midiSchema } from './schemas/midi.js';
@@ -126,6 +126,7 @@ try {
 // this is globals variable for the transfert table of fader values
 // updated value on 235 and used as a table on 130
 let controllerFader;
+let controllerMeter;
 
 let oscDestination;
 let oscSendPort;
@@ -134,8 +135,9 @@ let oscSendPort;
 
 globals.onUpdate(async (updates, oldValues, context) => {
   if ('controllerName' in updates) {
-    const { fader } = await import (`./controllers/${updates.controllerName}.js`);
+    const { fader, meter } = await import (`./controllers/${updates.controllerName}.js`);
     controllerFader = fader;
+    controllerMeter = meter;
     console.log(`- Updated controller ${updates.controllerName}`);
   }
 
@@ -152,16 +154,21 @@ globals.onUpdate(async (updates, oldValues, context) => {
     });
     // RE-WRITE FOR NO-MAX
     oscServer.on('message', async function (msg) {
-      const address = msg[0];
-      const oscAddresses = tracks.map(t => t.get('oscAddress'));
-      if (oscAddresses.includes(address)) {
-        const value = parseFloat(msg[1]);
-        tracks.forEach(track => {
-          if (track.get('oscAddress') === address) {
-            track.set({ faderUser: value }, { source: 'osc' });
-          };
-        });
-      };
+      const receivedAddress = msg[0];
+
+      tracks.forEach(track => {
+        if (track.get('faderAddress') === receivedAddress) {
+          const value = parseFloat(msg[1]);
+          track.set({ faderUser: value }, { source: 'osc' });
+        } else if (track.get('muteAddress') === receivedAddress) {
+          const value = parseFloat(msg[1]);
+          track.set({ mute: value }, { source: 'osc' });
+        } else if (track.get('meterAddress') === receivedAddress) {
+          msg.shift();
+          const value = msg.length > 1 ? Math.max(...msg) : msg[0];
+          track.set({ meterUser: value }, { source: 'osc' });
+        }
+      })
     });
   }
 
@@ -232,7 +239,9 @@ async function updateTracks() {
       await track.set({
         name: null,
         disabled: true,
-        oscAddress: null,
+        faderAddress: null,
+        muteAddress: null,
+        meterAddress: null,
       }, {source:'config'});
     }
   });
@@ -259,14 +268,15 @@ async function updateTracks() {
       await track.set({ faderUser: midiConfigLine.default }, { source:'config' });
     }
 
-    if (midiConfigLine.oscAddress) {
-      // there is an oscAddress defined
-      await track.set({ oscAddress: midiConfigLine.oscAddress }, { source: 'config' });
-    } else {
-      // set the default oscAddress communication /fader/1/user
-      const oscAddress = `/fader/${channel}/user`;
-      await track.set({ oscAddress: oscAddress }, { source: 'config'});
-    }
+    const faderAddress = midiConfigLine.faderAddress ? midiConfigLine.faderAddress : `/fader/${channel}/user`;
+    const meterAddress = midiConfigLine.meterAddress ? midiConfigLine.meterAddress : `/meter/${channel}/user`;
+    const muteAddress = midiConfigLine.muteAddress ? midiConfigLine.muteAddress : `/mute/${channel}`;
+
+    await track.set({
+      faderAddress: faderAddress,
+      meterAddress: meterAddress,
+      muteAddress: muteAddress
+     }, { source: 'config'});
   });
 
   // https://github.com/etiennedemoulin/midi-mixer/issues/8 is here
@@ -319,6 +329,12 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
         faderBytes,
         faderRaw,
       };
+    } else if ('meterUser' in updates) {
+      const meterRaw = dBtoRaw(updates.meterUser, controllerMeter);
+      return {
+        ...updates,
+        meterRaw,
+      };
     }
   }
 });
@@ -326,11 +342,21 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
 // _______________________________
 // listening for incoming soundworks updates
 // _______________________________
-function onTrackUpdate(newValues, oldValues, context, track) {
+function onTrackUpdate(updates, oldValues, context, track) {
   // send midi side
   if (midiOutPort) {
     if (context.source !== 'midi') {
-      setFaderView(track.get('channel'), globals.get('activePage'), tracks, midiOutPort);
+      if (updates.faderUser) {
+        setFaderView(track.get('channel'), globals.get('activePage'), tracks, midiOutPort);
+      } else if (updates.meterRaw) {
+        const absChannel = track.get('channel');
+        const relChannel = absToRelChannel(absChannel) + 207;
+        const meterBytes = Math.floor(updates.meterRaw * controllerMeter.length);
+        // console.log(updates)
+        // send aftertouch
+        midiOutPort.send([relChannel, meterBytes])
+
+      }
     } else {
       // update display values
       displayUserFader(globals.get('activePage'), midiOutPort, tracks);
@@ -345,11 +371,24 @@ function onTrackUpdate(newValues, oldValues, context, track) {
   }
   // send osc side
   if (context.source !== 'osc' && oscSendPort) {
-    const oscAddress = track.get('oscAddress');
-    if (oscAddress) {
-      const user = track.get('faderUser');
+    let address = null;
+    let value = null;
+    if (updates.faderUser) {
+      // fader is modified
+      address = track.get('faderAddress');
+      value = updates.faderUser;
+    } else if (updates.mute) {
+      // mute is modified
+      address = track.get('muteAddress');
+      value = updates.mute;
+    } else if (updates.meterUser) {
+      // meter is modified
+      address = track.get('meterAddress');
+      value = updates.meterUser;
+    }
+    if (address) {
       const oscClient = new OscClient(oscDestination, oscSendPort);
-      oscClient.send(oscAddress, user, () => oscClient.close());
+      oscClient.send(address, value, () => oscClient.close());
     }
   }
 

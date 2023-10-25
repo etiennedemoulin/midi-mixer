@@ -85,13 +85,27 @@ class MixerTracks extends LitElement {
       };
 
       const faderUser = Math.round(track.get('faderUser') * 100) / 100;
+      const meter = Math.round(track.get('meterUser') * 100) / 100;
 
       return html`
         <div class="${classMap(classes)}">
           <div>
             <p>channel: ${track.get('channel')}</p>
             <p class="name">${track.get('name') ? track.get('name') : '...'}</p>
-            <p class="name">${track.get('oscAddress') ? track.get('oscAddress') : '...'}</p>
+            <p class="name">${track.get('faderAddress') ? track.get('faderAddress') : '...'}</p>
+            <p class="name">${meter ? meter : '...'}</p>
+            <sc-slider
+              style="height:20px"
+              .value=${track.get('meterRaw')}
+            ></sc-slider>
+          </div>
+          <div class="mute">
+            <p>mute:</p>
+            <sc-toggle
+              ?disabled=${track.get('disabled')}
+              ?active=${track.get('mute')}
+              @change=${e => track.set({ mute: e.detail.value }, { source: 'web' })}
+            ></sc-toggle>
           </div>
           <sc-slider
             relative
@@ -108,14 +122,6 @@ class MixerTracks extends LitElement {
               .value=${ faderUser }
               @input=${e => track.set({ faderUser: e.detail.value }, { source: 'web' })}
             ></sc-number>
-            <div class="mute">
-              <p>mute:</p>
-              <sc-toggle
-                ?disabled=${track.get('disabled')}
-                ?active=${track.get('mute')}
-                @change=${e => track.set({ mute: e.detail.value }, { source: 'web' })}
-              ></sc-toggle>
-            </div>
           </div>
         </div>
       `;

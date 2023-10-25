@@ -48,14 +48,36 @@ export const trackSchema = {
     default: null,
     nullable: true,
   },
-  oscAddress: {
+  faderAddress: {
     type: 'string',
+    default: null,
+    nullable: true,
+  },
+  meterAddress: {
+    type: 'string',
+    default: null,
+    nullable: true,
+  },
+  meterUser: {
+    type: 'float',
+    default: null,
+    nullable: true,
+  },
+  meterRaw: {
+    type: 'float',
+    min: 0,
+    max: 1,
     default: null,
     nullable: true,
   },
   mute: {
     type:'boolean',
     default: false,
+    nullable: true,
+  },
+  muteAddress: {
+    type: 'string',
+    default: null,
     nullable: true,
   },
 };

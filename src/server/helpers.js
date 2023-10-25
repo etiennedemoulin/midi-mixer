@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-function dBtoRaw(dB, transfertTable) {
+export function dBtoRaw(dB, transfertTable) {
   if (dB === -Infinity) {
     dB = transfertTable[0]
   }
@@ -19,7 +19,7 @@ function dBtoRaw(dB, transfertTable) {
       Math.abs(transfertTable[index + sens] - transfertTable[index])
     ) : index;
 
-  const raw = interpIndex / transfertTable.length
+  const raw = interpIndex / transfertTable.length;
   return raw;
 }
 

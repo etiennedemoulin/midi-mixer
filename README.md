@@ -35,3 +35,7 @@ Please set up your MIDI device in Mackie-Control mode before using the software.
 
 ## Storing presets
 There is a folder to retrieve presets in `midi-mixer/midi-mixer/midi-config` 
+
+## Configuration of the server
+Port, subpath, https and password can be changed by running `npx soundworks --create-env` into the main directory.  
+
