@@ -1,11 +1,11 @@
 # midi-mixer
-This is the `no-max` branch.  
+This is the `dev` branch.  
 Map your midi controller  
 Utility to map OSC send and receive with a MIDI controller. A JSON file is used to configure the object.  
 Support for multiple pages, screens, fader touch and different fader mappings is integrated.  
 
 ## Installing
-Clone the repo, `cd midi-mixer/midi-mixer/midi-mixer` then `npm install && npm run dev`.  
+Clone the repo, `cd midi-mixer` then `npm install && npm run dev`.  
 
 ## JSON Syntax
 - **channel** : [number] fader used on your midi device

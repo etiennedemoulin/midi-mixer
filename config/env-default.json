@@ -1,0 +1,16 @@
+{
+  type: 'development',
+  port: 8000,
+  subpath: '',
+  serverAddress: '',
+  useHttps: false,
+  httpsInfos: {
+    cert: null,
+    key: null,
+  },
+  auth: {
+    clients: [],
+    login: '',
+    password: '',
+  },
+}
