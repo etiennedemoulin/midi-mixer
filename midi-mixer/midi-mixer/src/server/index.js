@@ -155,10 +155,13 @@ globals.onUpdate(async (updates, oldValues, context) => {
       const address = msg[0];
       const oscAddresses = tracks.map(t => t.get('oscAddress'));
       if (oscAddresses.includes(address)) {
-        const track = tracks.find(t => t.get('oscAddress') === address)
         const value = parseFloat(msg[1]);
-        track.set({ faderUser: value }, { source: 'osc' });
-      }
+        tracks.forEach(track => {
+          if (track.get('oscAddress') === address) {
+            track.set({ faderUser: value }, { source: 'osc' });
+          };
+        });
+      };
     });
   }
 
