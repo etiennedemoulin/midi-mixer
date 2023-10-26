@@ -7,15 +7,11 @@
   {
     channel: 1,
     name: 'midi-1',
-    type: 'linear',
+    type: 'volume',
     faderAddress: '/track/1/gain',
-    meterAddress: '/meter/1/user',
-    muteAddress: '/mute/1',
-    default: 64,
-    range: [
-      0,
-      127,
-    ],
+    meterAddress: '/track/1/levels/output/A',
+    muteAddress: '/track/1/mute',
+    default: -10,
   },
   {
     channel: 2,

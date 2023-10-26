@@ -152,7 +152,7 @@ globals.onUpdate(async (updates, oldValues, context) => {
     const oscServer = new OscServer(oscReceivePort, oscDestination, () => {
       console.log(`OSC Server is listening on ${oscDestination}:${oscReceivePort}`);
     });
-    // RE-WRITE FOR NO-MAX
+    // OSC RECEIVE
     oscServer.on('message', async function (msg) {
       const receivedAddress = msg[0];
 
@@ -161,7 +161,7 @@ globals.onUpdate(async (updates, oldValues, context) => {
           const value = parseFloat(msg[1]);
           track.set({ faderUser: value }, { source: 'osc' });
         } else if (track.get('muteAddress') === receivedAddress) {
-          const value = parseFloat(msg[1]);
+          const value = parseFloat(msg[1]) === 1 ? true : false;
           track.set({ mute: value }, { source: 'osc' });
         } else if (track.get('meterAddress') === receivedAddress) {
           msg.shift();
@@ -344,31 +344,48 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
 // _______________________________
 function onTrackUpdate(updates, oldValues, context, track) {
   // send midi side
-  if (midiOutPort) {
-    if (context.source !== 'midi') {
-      if (updates.faderUser) {
-        setFaderView(track.get('channel'), globals.get('activePage'), tracks, midiOutPort);
-      } else if (updates.meterRaw) {
-        const absChannel = track.get('channel');
-        const relChannel = absToRelChannel(absChannel) + 207;
-        const meterBytes = Math.floor(updates.meterRaw * controllerMeter.length);
-        // console.log(updates)
-        // send aftertouch
-        midiOutPort.send([relChannel, meterBytes])
 
+  if (midiOutPort) {
+    if (updates.faderUser) {
+      if (context.source !== 'midi') {
+        // on soundworks update
+        setFaderView(track.get('channel'), globals.get('activePage'), tracks, midiOutPort);
+      } else {
+        // on loopback
+        // update display
+        displayUserFader(globals.get('activePage'), midiOutPort, tracks);
+        // send fader value on release
+        if (updates.faderTouched === false) {
+          const absChannel = track.get('channel');
+          const relChannel = absToRelChannel(absChannel) + 223;
+          const bytes = track.get('faderBytes');
+          midiOutPort.send([relChannel, bytes[1], bytes[0]]);
+        }
       }
-    } else {
-      // update display values
-      displayUserFader(globals.get('activePage'), midiOutPort, tracks);
-      // send fader value on release
-      if (track.get('faderTouched') === false && track.get('faderBytes')) {
+    } else if (updates.mute !== undefined) {
+      if (context.source !== 'midi') {
+        // on soundworks update
         const absChannel = track.get('channel');
-        const relChannel = absToRelChannel(absChannel) + 223;
-        const bytes = track.get('faderBytes');
-        midiOutPort.send([relChannel, bytes[1], bytes[0]])
+        const relChannel = absToRelChannel(absChannel) + 15;
+        const value = updates.mute === true ? 127 : 0;
+        midiOutPort.send([144, relChannel, value]);
+      } else {
+        // on loopback
+      }
+    } else if (updates.meterRaw) {
+      if (context.source !== 'midi') {
+        // on soundworks update
+        const absChannel = track.get('channel');
+        const relChannel = ((absToRelChannel(absChannel) - 1) << 4).toString(2);
+        const meterBytes = (Math.floor(updates.meterRaw * controllerMeter.length)).toString(2);
+        const value = parseInt(relChannel, 2) + parseInt(meterBytes, 2);
+        midiOutPort.send([0xD0, value]);
       }
     }
   }
+
+
+
   // send osc side
   if (context.source !== 'osc' && oscSendPort) {
     let address = null;
@@ -377,10 +394,11 @@ function onTrackUpdate(updates, oldValues, context, track) {
       // fader is modified
       address = track.get('faderAddress');
       value = updates.faderUser;
-    } else if (updates.mute) {
+    } else if (updates.mute !== undefined) {
+      // f*cking boolean
       // mute is modified
       address = track.get('muteAddress');
-      value = updates.mute;
+      value = updates.mute === true ? 1 : 0;
     } else if (updates.meterUser) {
       // meter is modified
       address = track.get('meterAddress');
@@ -401,6 +419,7 @@ function onMidiReceive(msg) {
     const relChannel = msg.getNote() - 103;
     const absChannel = relToAbsChannel(relChannel, globals.get('activePage'));
     const faderTouched = msg.getVelocity() > 0;
+    // @TODO try to remove find and replace by forEach loop
     const track = tracks.find(t => t.get('channel') === absChannel);
     if (track && track.get('disabled') === false) {
       track.set({
@@ -413,6 +432,7 @@ function onMidiReceive(msg) {
     const relChannel = msg[0] - 223;
     const absChannel = relToAbsChannel(relChannel, globals.get('activePage'));
     const faderBytes = [msg[2], msg[1]]; // msb, lsb
+    // @TODO try to remove find and replace by forEach loop
     const track = tracks.find(t => t.get('channel') === absChannel);
     if (track && track.get('disabled') === false) {
       track.set({
@@ -423,22 +443,68 @@ function onMidiReceive(msg) {
   } else if (msg.isNoteOn() && [46, 47].includes(msg.getNote())) {
     // parse fader bank left / right
     if (msg.getNote() === 46) {
-      let activePage = globals.get('activePage');
-      if (activePage > 0) {
-        activePage = activePage - 1;
-        globals.set({ activePage: activePage }, { source: 'midi' });
-        setMixerView(activePage, midiOutPort, tracks);
-      }
+
     } else {
-      const channels = tracks.map(t => t.get('channel'));
-      const lastFader = channels[channels.length - 1];
-      let activePage = globals.get('activePage');
-      const lastPage = Math.floor((lastFader - 1) / 8);
-      if (activePage < lastPage) {
-        activePage = activePage + 1;
-        globals.set({ activePage: activePage }, {source:'midi'});
-        setMixerView(activePage, midiOutPort, tracks);
+
+    }
+  } else if (msg.isNoteOn()) {
+    switch (msg.getNote()) {
+      case 46: {
+        // fader bank left
+        let activePage = globals.get('activePage');
+        if (activePage > 0) {
+          activePage = activePage - 1;
+          globals.set({ activePage: activePage }, { source: 'midi' });
+          setMixerView(activePage, midiOutPort, tracks);
+        }
+        break;
+      }
+      case 47: {
+        // fader bank right
+        const channels = tracks.map(t => t.get('channel'));
+        const lastFader = channels[channels.length - 1];
+        let activePage = globals.get('activePage');
+        const lastPage = Math.floor((lastFader - 1) / 8);
+        if (activePage < lastPage) {
+          activePage = activePage + 1;
+          globals.set({ activePage: activePage }, {source:'midi'});
+          setMixerView(activePage, midiOutPort, tracks);
+        }
+        break;
+      }
+      case 16:
+        // mute 1
+      case 17:
+        // mute 2
+      case 18:
+        // mute 3
+      case 19:
+        // mute 4
+      case 20:
+        // mute 5
+      case 21:
+        // mute 6
+      case 22:
+        // mute 7
+      case 23: {
+        // mute 8
+        const relChannel = msg.getNote() - 15;
+        const absChannel = relToAbsChannel(relChannel, globals.get('activePage'));
+        tracks.forEach(track => {
+          if (track.get('channel') === absChannel) {
+            const currentValue = track.get('mute');
+            track.set({ mute: !currentValue }, { source: 'midi' });
+          }
+        })
+        break;
       }
     }
   }
+
+
+
+
+
+
+
 }
