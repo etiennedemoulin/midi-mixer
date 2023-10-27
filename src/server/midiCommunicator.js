@@ -62,15 +62,29 @@ function getValuesFromPage(activePage, faderUser) {
 
 // total update : 8 faders + 2 displays
 export async function setMixerView(activePage, midiOutPort, tracks) {
-  // @TODO mute and meters set
   for (let absChannel = (activePage * 8) + 1; absChannel <= (activePage + 1) * 8; absChannel++) {
     const track = tracks.find(t => t.get('channel') === absChannel);
     const relChannel = absToRelChannel(absChannel);
+
+    // track exist
     if (track && track.get('faderBytes')) {
+      // track has fader value
       const faderBytes = track.get('faderBytes');
-      midiOutPort.send([relChannel + 223, faderBytes[1], faderBytes[0]]);
+      sendFader(relChannel, faderBytes, midiOutPort);
     } else {
-      midiOutPort.send([relChannel + 223, 0, 0]);
+      sendFader(relChannel, [0, 0], midiOutPort);
+    }
+    if (track && track.get('mute') !== undefined) {
+      const value = track.get('mute');
+      sendMute(relChannel, value, midiOutPort);
+    } else {
+      sendMute(relChannel, false, midiOutPort);
+    }
+    if (track && track.get('meterBytes')) {
+      const value = track.get('meterBytes');
+      sendMeter(relChannel, value, midiOutPort);
+    } else {
+      sendMeter(relChannel, 0x0, midiOutPort);
     }
   }
 
@@ -86,21 +100,27 @@ export async function setMixerView(activePage, midiOutPort, tracks) {
     // log(`> names ${displayName}`);
   }
   displayUserFader(activePage, midiOutPort, tracks);
-
 }
 
-export function setFaderView(absChannel, activePage, tracks, midiOutPort) {
+export function setFaderView(absChannel, activePage, tracks, midiOutPort, updates) {
   const relChannel = absToRelChannel(absChannel);
   const track = tracks.find(t => t.get('channel') === absChannel);
-  const faderBytes = track.get('faderBytes');
 
-  if (faderBytes) {
-    if (relChannel + (activePage * 8) === absChannel) {
-      midiOutPort.send([relChannel+223, faderBytes[1], faderBytes[0]])
+  if (relChannel + (activePage * 8) === absChannel) {
+    if (updates.faderBytes) {
+      // update fader
+      sendFader(relChannel, updates.faderBytes, midiOutPort);
       displayUserFader(activePage, midiOutPort, tracks);
-    } else if (absChannel === 0) {
-      log(`> set fader MAIN: ${faderBytes}`);
+    } else if (updates.mute !== undefined) {
+      // update mute
+      const value = updates.mute;
+      sendMute(relChannel, value, midiOutPort);
+    } else if (updates.meterBytes) {
+      // update meter
+      sendMeter(relChannel, updates.meterBytes, midiOutPort);
     }
+  } else if (absChannel === 0) {
+    console.log(`update fader MAIN is not yet implemented`);
   }
 }
 
@@ -119,10 +139,18 @@ function _displayUserFader(activePage, midiOutPort, tracks) {
 export const displayUserFader = _.throttle(_displayUserFader, 50, { 'trailing': true });
 
 export function resetMixerView(midiOutPort) {
-  // @TODO - mute and meters reset
   // @TODO - resetMixerView on quit server
-  for (let i = 0; i < 7; i++) {
-    midiOutPort.send([i+224, 0, 0]);
+  // faders
+  for (let i = 1; i <= 8; i++) {
+    sendFader(i, [0, 0], midiOutPort);
+  }
+  // meters
+  for (let i = 1; i <= 8; i++) {
+    sendMeter(i, 0x0, midiOutPort);
+  }
+  // mute
+  for (let i = 1; i <= 8; i++) {
+    sendMute(i, false, midiOutPort);
   }
 }
 
@@ -161,6 +189,38 @@ function formatDisplay(array) {
   }
   return output;
 }
+
+export function sendMute(relChannel, value, midiOutPort) {
+  if (relChannel > 0 && relChannel <= 8 && typeof value === 'boolean') {
+    const cooked = value === true ? 127 : 0;
+    midiOutPort.send([144, relChannel + 15, cooked]);
+  } else {
+    throw new Error('Channel is not in range');
+  }
+}
+
+export function sendMeter(relChannel, value, midiOutPort) {
+  if (relChannel > 0 && relChannel <= 8 && value >= 0x0 && value <= 0xF) {
+    const channelBytes = ((relChannel - 1) << 4).toString(2);
+    const meterBytes = value.toString(2);
+    const cooked = parseInt(channelBytes, 2) + parseInt(meterBytes, 2);
+    midiOutPort.send([0xD0, cooked]);
+  } else {
+    throw new Error('Channel is not in range');
+  }
+}
+
+export function sendFader(relChannel, value, midiOutPort) {
+  if (relChannel > 0 && relChannel <= 8 && value[0] >= 0 && value[0] <= 127 &&
+    value[1] >= 0 && value[1] <= 127) {
+    midiOutPort.send([relChannel + 223, value[1], value[0]])
+  } else {
+    throw new Error('Channel is not in range');
+  }
+}
+
+
+
 // send display to MIDI
 // f0 00 00 66 14 12 38 20 20 20 20 20 20 20 20 20 20 20 20 20 20 2d 33 35 2e 37 30 20 2d 32 33 2e 36 35 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 f7
 
@@ -174,60 +234,3 @@ function formatDisplay(array) {
 // 32 32 32 32 32 32 32 32 32 32
 // 32 32 32 32 32 32 (56 characters)
 // 247 // end of sysex
-
-
-    // const sysEx = 240;
-    // const mackieID = [0,0,102];
-    // const MCU_ID = 20;
-    // const LCD = 18;
-    // let element = [];
-    // let listText = '';
-
-
-    // // sanitize textArray
-    // textArray = textArray.map(e => (e === null) ? '' : e);
-
-
-    // // console.log(textArray)
-
-    // switch (line) {
-    //     case 'top':
-    //         element = [240, 0, 0, 102, 20, 18, 0];
-    //         break;
-    //     case 'bottom':
-    //         element = [240, 0, 0, 102, 20, 18, 56];
-    //         break;
-    //     default:
-    // }
-
-    // if (textArray.length !== 8) {
-    //     for (let i=textArray.length;i<8;i++) {
-    //         textArray.push('');
-    //     }
-    // }
-
-    // if (textArray.length !== 8) {
-    //     textArray = textArray.slice(0,8);
-    //     console.log("attention list will be trimed");
-    // }
-
-    // for (i in textArray) {
-    //     if (typeof textArray[i] === 'string') {
-    //         listText = textArray[i].split('');
-    //     } else if (typeof textArray[i] === 'number') {
-    //         const thisString = textArray[i].toFixed(2).toString();
-    //         listText = thisString.split('')
-    //     }
-    //     for (let i=0;i<7;i++) {
-    //         if (listText[i] !== undefined) {
-    //             // console.log(listText[i]);
-    //             element.push(listText[i].charCodeAt(0));
-    //         }
-    //         else {
-    //             element.push(32);
-    //         }
-    //     }
-    // }
-
-    // element.push(247);
-    // sendMidi(element);

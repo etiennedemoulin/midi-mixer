@@ -70,6 +70,13 @@ export const trackSchema = {
     default: null,
     nullable: true,
   },
+  meterBytes: {
+    type: 'integer',
+    min: 0,
+    max: 15,
+    default: null,
+    nullable: true,
+  },
   mute: {
     type:'boolean',
     default: false,

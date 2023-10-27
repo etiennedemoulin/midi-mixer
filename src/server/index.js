@@ -19,7 +19,7 @@ import { userToRaw, rawToUser, getFaderRange, parseTrackConfig, rawToBytes, byte
 import { trackSchema } from './schemas/tracks.js';
 import { globalsSchema } from './schemas/globals.js';
 import { midiSchema } from './schemas/midi.js';
-import { onMidiOutFail, onMidiInFail, getMidiDeviceList, displayUserFader, setFaderView, setMixerView, resetMixerView } from './midiCommunicator.js';
+import { onMidiOutFail, onMidiInFail, getMidiDeviceList, displayUserFader, setFaderView, setMixerView, resetMixerView, sendFader, sendMute } from './midiCommunicator.js';
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -37,12 +37,13 @@ console.log(`
 
 
 // catches uncaught exceptions
-process.on('uncaughtException', function() {
-  process.send('error');
-});
+// process.on('uncaughtException', function() {
+//   process.send('error');
+// });
 
-// catch KILL MAX
-// process.on('SIGTERM', );
+// process.on('SIGINT', function() {
+//   resetMixerView();
+// });
 
 /**
  * Initialisation process
@@ -242,6 +243,11 @@ async function updateTracks() {
         faderAddress: null,
         muteAddress: null,
         meterAddress: null,
+        faderUser: null,
+        mute: false,
+        meterUser: null,
+        meterRaw: null,
+        meterBytes: null,
       }, {source:'config'});
     }
   });
@@ -298,6 +304,8 @@ filesystem.onUpdate(updates => {
 // hook
 // --------------------------------
 server.stateManager.registerUpdateHook('track', async (updates, currentValues, context) => {
+  // @TODO add new type : dca
+  // @TODO add new type : alias
   // hook compute each fader values
   if (context.source !== 'hook') {
     if ('faderRaw' in updates || 'faderUser' in updates || 'faderBytes' in updates) {
@@ -330,10 +338,14 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
         faderRaw,
       };
     } else if ('meterUser' in updates) {
+      const meterUser = updates.meterUser;
       const meterRaw = dBtoRaw(updates.meterUser, controllerMeter);
+      const meterBytes = Math.floor(meterRaw * controllerMeter.length);
       return {
         ...updates,
+        meterUser,
         meterRaw,
+        meterBytes,
       };
     }
   }
@@ -344,47 +356,28 @@ server.stateManager.registerUpdateHook('track', async (updates, currentValues, c
 // _______________________________
 function onTrackUpdate(updates, oldValues, context, track) {
   // send midi side
-
+  // @TODO clean this : meter has to be sent EVEN if context is midi :)
   if (midiOutPort) {
-    if (updates.faderUser) {
-      if (context.source !== 'midi') {
-        // on soundworks update
-        setFaderView(track.get('channel'), globals.get('activePage'), tracks, midiOutPort);
-      } else {
-        // on loopback
-        // update display
-        displayUserFader(globals.get('activePage'), midiOutPort, tracks);
-        // send fader value on release
-        if (updates.faderTouched === false) {
-          const absChannel = track.get('channel');
-          const relChannel = absToRelChannel(absChannel) + 223;
-          const bytes = track.get('faderBytes');
-          midiOutPort.send([relChannel, bytes[1], bytes[0]]);
-        }
-      }
-    } else if (updates.mute !== undefined) {
+    if (context.source !== 'midi') {
       // on soundworks update
-      if (context.source !== 'midi') {
-        const absChannel = track.get('channel');
-        const relChannel = absToRelChannel(absChannel) + 15;
-        const value = updates.mute === true ? 127 : 0;
-        midiOutPort.send([144, relChannel, value]);
-      } else {
-        // on loopback
+      setFaderView(track.get('channel'), globals.get('activePage'), tracks, midiOutPort, updates);
+    } else {
+      // on loopback
+      // update display
+      displayUserFader(globals.get('activePage'), midiOutPort, tracks);
+      // send fader value on release
+      if (updates.faderTouched === false) {
+        const relChannel = absToRelChannel(track.get('channel'));
+        const bytes = track.get('faderBytes');
+        sendFader(relChannel, bytes, midiOutPort);
       }
-    } else if (updates.meterRaw) {
-      if (context.source !== 'midi') {
-        // on soundworks update
-        const absChannel = track.get('channel');
-        const relChannel = ((absToRelChannel(absChannel) - 1) << 4).toString(2);
-        const meterBytes = (Math.floor(updates.meterRaw * controllerMeter.length)).toString(2);
-        const value = parseInt(relChannel, 2) + parseInt(meterBytes, 2);
-        midiOutPort.send([0xD0, value]);
+      // send mute LED
+      if (updates.mute !== undefined && track.get('disabled') === false) {
+        const relChannel = absToRelChannel(track.get('channel'));
+        sendMute(relChannel, updates.mute, midiOutPort);
       }
     }
   }
-
-
 
   // send osc side
   if (context.source !== 'osc' && oscSendPort) {
@@ -462,7 +455,6 @@ function onMidiReceive(msg) {
         setMixerView(activePage, midiOutPort, tracks);
       }
     } else if ([16, 17, 18, 19, 20, 21, 22, 23].includes(midiNote) && msg.isNoteOn()) {
-      // @TODO - LED feedback on MIDI mute pressed
       const relChannel = msg.getNote() - 15;
       const absChannel = relToAbsChannel(relChannel, globals.get('activePage'));
       tracks.forEach(track => {

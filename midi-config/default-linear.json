@@ -64,6 +64,15 @@
     ],
   },
   {
+    channel: 8,
+    name: 'midi-8',
+    type: 'linear',
+    range: [
+      0,
+      127,
+    ],
+  },
+  {
     channel: 9,
     name: 'midi-8',
     type: 'linear',
