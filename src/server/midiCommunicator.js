@@ -62,6 +62,7 @@ function getValuesFromPage(activePage, faderUser) {
 
 // total update : 8 faders + 2 displays
 export async function setMixerView(activePage, midiOutPort, tracks) {
+  // @TODO mute and meters set
   for (let absChannel = (activePage * 8) + 1; absChannel <= (activePage + 1) * 8; absChannel++) {
     const track = tracks.find(t => t.get('channel') === absChannel);
     const relChannel = absToRelChannel(absChannel);
@@ -118,6 +119,8 @@ function _displayUserFader(activePage, midiOutPort, tracks) {
 export const displayUserFader = _.throttle(_displayUserFader, 50, { 'trailing': true });
 
 export function resetMixerView(midiOutPort) {
+  // @TODO - mute and meters reset
+  // @TODO - resetMixerView on quit server
   for (let i = 0; i < 7; i++) {
     midiOutPort.send([i+224, 0, 0]);
   }
