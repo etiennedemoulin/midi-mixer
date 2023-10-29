@@ -5,7 +5,7 @@ const config = {
   // keep versionning synchronized with the current repo
   buildVersion: pkg.version,
   appId: 'fr.ircam.ismm.midi-mixer',
-  icon: './public/favicon.ico',
+  icon: '',
   // to be fixed confirmed...
   publish: [
     {

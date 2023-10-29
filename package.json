@@ -14,14 +14,18 @@
     "start": "node .build/server/index.js",
     "watch": "soundworks-build -p",
     "watch:inspect": "soundworks-build -d -p",
+    "watch-build": "soundworks-build -b -w",
     "watch:sass": "sass --watch src/clients/components/css:.build/public/css",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "electron:dev": "soundworks-electron dev",
+    "electron:build": "soundworks-electron build"
   },
   "dependencies": {
     "@ircam/sc-components": "^3.0.0-alpha.1",
     "@soundworks/core": "^4.0.0-alpha.0",
     "@soundworks/helpers": "^1.0.0-alpha.5",
     "@soundworks/plugin-filesystem": "^2.0.0-alpha.1",
+    "electron-rebuild": "^3.2.9",
     "json5": "^2.2.3",
     "jzz": "^1.6.4",
     "lit": "^2.8.0",

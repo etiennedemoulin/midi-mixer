@@ -67,7 +67,7 @@ await server.start();
 
 const filesystem = await server.pluginManager.get('filesystem');
 
-const controllersFolder = fs.readdirSync(path.resolve(process.cwd(),'./src/server/controllers'));
+const controllersFolder = fs.readdirSync(path.resolve(process.cwd(),'./public/controllers'));
 const selectControllers = controllersFolder.map(e => e.split('.').shift());
 // register globals
 const globals = await server.stateManager.create('globals', {
@@ -136,7 +136,7 @@ let oscSendPort;
 
 globals.onUpdate(async (updates, oldValues, context) => {
   if ('controllerName' in updates) {
-    const { fader, meter } = await import (`./controllers/${updates.controllerName}.js`);
+    const { fader, meter } = await import (path.resolve(process.cwd(),`./public/controllers/${updates.controllerName}.js`));
     controllerFader = fader;
     controllerMeter = meter;
     console.log(`- Updated controller ${updates.controllerName}`);
