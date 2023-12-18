@@ -14,3 +14,9 @@ Thumbs.db
 
 # TLS certificates
 /**/*.pem
+
+# midi-mixer specific
+electron-build
+.existing-boxes
+Thumbs.db
+max/midi-mixer/javascript/midi-mixer.cjs

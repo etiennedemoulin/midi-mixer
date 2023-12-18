@@ -1,0 +1,8 @@
+[
+  {
+    channel: 1,
+    name: 'midi-1',
+    type: 'volume',
+    oscAddress: '/bus/1/gain',
+  },
+]
