@@ -3,3 +3,6 @@ node_modules
 package-lock.json
 .build
 electron-build
+.existing-boxes
+Thumbs.db
+max/midi-mixer/javascript/midi-mixer.cjs
