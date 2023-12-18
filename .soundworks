@@ -1,0 +1,5 @@
+{
+  "name": "midi-mixer",
+  "eslint": true,
+  "language": "js"
+}
