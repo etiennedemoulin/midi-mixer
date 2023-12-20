@@ -1,5 +1,7 @@
 import { getUserFromRawFader, getRawFromUserFader, getBytesFromRawFader, getRawFromBytesFader, getRawFromUserMeter, getBytesFromRawMeter, getFaderRange } from './helpers.js';
 
+import { sendMaxUpdates } from './max.js';
+
 export function onMidiUpdate(updates, app) {
 
 }
@@ -27,6 +29,9 @@ export function propagateValues(updates, values, app) {
 }
 
 export function onTrackUpdate(updates, values, context, track, app) {
+  if (app.env.max && context.source !== 'max') {
+    sendMaxUpdates(updates, track, app);
+  }
   // console.log(updates);
   // here is the function to send soundworks update on differents connections (max, osc, midi)
 }
@@ -106,6 +111,7 @@ export async function onConfigUpdate(config, app, server) {
         updates.fader.user = updates.fader.range[0][0]
       }
     } else {
+      // @TODO need to check if default value is in range
       updates.fader.user = trackConfig.default;
     }
 

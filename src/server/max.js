@@ -43,22 +43,29 @@ export function createMaxEnvironment(app) {
         table: table
       });
     },
-    [Max.MESSAGE_TYPES.ALL]: (handled, ...args) => onMaxMessage(handled, ...args),
+    [Max.MESSAGE_TYPES.ALL]: (handled, ...args) => onMaxMessage(handled, app, ...args),
   });
 
   Max.outletBang();
 };
 
-function onMaxMessage(handled, ...args) {
+function onMaxMessage(handled, app, ...args) {
   if (handled) {
     return;
   }
-  console.log(...args);
+  const name = args[0];
+  const value = args[1];
+  const track = app.tracks.find(s => s.get('name') === name);
+  if (track) {
+    const fader = track.get('fader');
+    fader.user = value;
+    track.set({ fader: fader }, { source: 'max' });
+  }
 }
 
 async function bootstrap(app) {
   try {
-    Max.post(`maxID : ${app.max.id} || target-config : ${app.core.get('config')} || table : ${app.core.get('table').active}`);
+    Max.post(`maxID : ${app.max.id} || target-config : ${app.core.get('config').target} || table : ${app.core.get('table').active}`);
   } catch(err) {
     console.log(err);
   }
@@ -68,4 +75,13 @@ async function bootstrap(app) {
 
 }
 
+export async function sendMaxUpdates(updates, track, app) {
+  if ('fader' in updates) {
+    const name = track.get('name').replace(/\s/g, '');
+    const userFader = Math.round(updates.fader.user * 100) / 100;
+    Max.outlet("updates", userFader, name);
+  }
+}
 
+
+// @TODO script creation of [r track]->[prepend track]->[node.script]

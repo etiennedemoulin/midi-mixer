@@ -101,7 +101,7 @@ app.core.onUpdate(async updates => {
   if ('config' in updates) {
     onConfigUpdate(updates.config.target, app, server);
   }
-});
+}, true);
 
 /**
  * Hook updates
