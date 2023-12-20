@@ -18,7 +18,7 @@
     "lint": "eslint .",
     "electron:dev": "soundworks-electron dev",
     "electron:build": "soundworks-electron build",
-    "max:dev": "esbuild ./src/server/index.js  --bundle --watch --format=cjs --platform=node --external:max-api --outfile=max/midi-mixer/javascript/midi-mixer.cjs",
+    "max:dev": "npm run build && rm -R max/midi-mixer/javascript && mkdir max/midi-mixer/javascript && cp -R .build max/midi-mixer/javascript && cp -R public max/midi-mixer/javascript && cp -R config max/midi-mixer/javascript && esbuild ./src/server/index.js  --bundle --watch --format=cjs --platform=node --external:max-api --outfile=max/midi-mixer/javascript/midi-mixer.cjs",
     "max:build": "esbuild ./src/server/index.js  --bundle --format=cjs --platform=node --external:max-api --outfile=max/midi-mixer/javascript/midi-mixer.cjs"
   },
   "dependencies": {
@@ -28,13 +28,16 @@
     "@soundworks/helpers": "^1.0.0-alpha.2",
     "@soundworks/plugin-filesystem": "^2.0.0-alpha.6",
     "json5": "^2.2.2",
-    "lit": "^3.0.2"
+    "jzz": "^1.7.6",
+    "lit": "^3.0.2",
+    "node-osc": "^9.0.2"
   },
   "devDependencies": {
     "@ircam/eslint-config": "^1.3.0",
     "@soundworks/build": "^1.0.0-alpha.0",
     "@soundworks/create": "^1.0.0-alpha.17",
     "concurrently": "^8.2.2",
+    "esbuild": "^0.19.9",
     "eslint": "^8.56.0",
     "sass": "^1.57.1"
   }

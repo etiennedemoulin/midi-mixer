@@ -20,3 +20,6 @@ electron-build
 .existing-boxes
 Thumbs.db
 max/midi-mixer/javascript/midi-mixer.cjs
+max/midi-mixer/javascript/.build
+max/midi-mixer/javascript/public
+max/midi-mixer/javascript/config

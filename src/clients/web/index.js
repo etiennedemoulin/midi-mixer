@@ -3,7 +3,16 @@ import { Client } from '@soundworks/core/client.js';
 import launcher from '@soundworks/helpers/launcher.js';
 
 import { html, render } from 'lit';
-import '../components/sw-credits.js';
+import './views/mixer-editor.js';
+import './views/mixer-tracks.js';
+import createLayout from './views/layout.js';
+
+import '@ircam/sc-components/sc-text.js';
+import '@ircam/sc-components/sc-icon.js';
+import '@ircam/sc-components/sc-select.js';
+import '@ircam/sc-components/sc-number.js';
+
+// import { removeFromArray } from './utils.js';
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -26,31 +35,6 @@ async function main($container) {
    */
   const client = new Client(config);
 
-  /**
-   * Register some soundworks plugins, you will need to install the plugins
-   * before hand (run `npx soundworks` for help)
-   */
-  // client.pluginManager.register('my-plugin', plugin);
-
-  /**
-   * Register the soundworks client into the launcher
-   *
-   * The launcher will do a bunch of stuff for you:
-   * - Display default initialization screens. If you want to change the provided
-   * initialization screens, you can import all the helpers directly in your
-   * application by doing `npx soundworks --eject-helpers`. You can also
-   * customise some global syles variables (background-color, text color etc.)
-   * in `src/clients/components/css/app.scss`.
-   * You can also change the default language of the intialization screen by
-   * setting, the `launcher.language` property, e.g.:
-   * `launcher.language = 'fr'`
-   * - By default the launcher automatically reloads the client when the socket
-   * closes or when the page is hidden. Such behavior can be quite important in
-   * performance situation where you don't want some phone getting stuck making
-   * noise without having any way left to stop it... Also be aware that a page
-   * in a background tab will have all its timers (setTimeout, etc.) put in very
-   * low priority, messing any scheduled events.
-   */
   launcher.register(client, { initScreensContainer: $container });
 
   /**
@@ -58,13 +42,157 @@ async function main($container) {
    */
   await client.start();
 
-  render(html`
-    <div class="simple-layout">
-      <p>Hello ${client.config.app.name}!</p>
+  const tracks = await client.stateManager.getCollection('track');
+  const core = await client.stateManager.attach('core');
 
-      <sw-credits .infos="${client.config.app}"></sw-credits>
-    </div>
-  `, $container);
+  core.onUpdate(() => {
+    $layout.requestUpdate();
+  });
+
+  const $layout = createLayout(client, $container);
+
+  let view = 'mixer';
+
+  const mixerView = html`
+    <mixer-tracks
+      .tracks=${tracks}
+    ></mixer-tracks>
+  `;
+  const editorView = html`
+    <mixer-editor
+      .core=${core}
+    ></mixer-editor>
+  `;
+
+  const header = {
+
+    importData() {
+      const element = document.createElement('div');
+      element.innerHTML = '<input type="file">';
+      const fileInput = element.firstChild;
+
+      fileInput.addEventListener('change', function() {
+        const file = fileInput.files[0];
+
+        if (file.name.match(/\.(txt|json)$/)) {
+          const reader = new FileReader();
+
+          reader.onload = function() {
+            const config = core.get('config');
+            const filename = file.name.substring(0, file.name.lastIndexOf('.')) || file.name
+            config.active = filename;
+            config.target = JSON.parse(reader.result);
+            core.set({ config: config });
+          };
+
+          reader.readAsText(file);
+        } else {
+          console.log("File not supported, .txt or .json files only");
+        }
+      });
+      fileInput.click();
+    },
+
+    download(data, filename, type) {
+      var file = new Blob([data], {type: type});
+      if (window.navigator.msSaveOrOpenBlob) // IE10+
+          window.navigator.msSaveOrOpenBlob(file, filename);
+      else { // Others
+          var a = document.createElement("a"),
+                  url = URL.createObjectURL(file);
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function() {
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(url);
+          }, 0);
+      }
+    },
+
+
+    render() {
+      const table = core.get('table');
+      const config = core.get('config');
+      return html`
+        <header>
+          <sc-icon
+            type="gear"
+            @input=${e => {
+              view = view === 'editor' ? 'mixer' : 'editor';
+
+              switch (view) {
+                case 'editor': {
+                  $layout.deleteComponent(mixerView);
+                  $layout.addComponent(editorView);
+                  break;
+                }
+              case 'mixer': {
+                  $layout.deleteComponent(editorView);
+                  $layout.addComponent(mixerView);
+                  break;
+                }
+              }
+            }}
+          >config</sc-icon>
+
+          <div class="midi-controls">
+
+            <div>
+              <sc-text
+                style="width:150px;"
+              >${config.active}</sc-text>
+            </div>
+            <div>
+              <sc-button
+                @input=${e => this.importData()}
+              >load</sc-button>
+            </div>
+            <div>
+              <sc-button
+                @input=${e => {
+                  this.download(
+                    JSON.stringify(config.target, null, 2),
+                    config.active,
+                    'application/json'
+                  );
+                }}
+              >save</sc-button>
+            </div>
+            <div>
+              <sc-text>Table</sc-text>
+              <sc-select
+                value=${table.active}
+                .options=${table.list}
+                @change=${e => {
+                  table.active = e.target.value;
+                  core.set({ table: table });
+                }}
+              ></sc-select>
+            </div>
+            <div>
+
+            </div>
+            <div>
+
+            </div>
+            <div>
+
+            </div>
+          </div>
+        </header>
+      `;
+    },
+  }
+
+  $layout.addComponent(header);
+
+  if (view === 'mixer') {
+    $layout.addComponent(mixerView);
+  } else {
+    $layout.addComponent(editorView);
+  }
 }
 
 // The launcher enables instanciation of multiple clients in the same page to
