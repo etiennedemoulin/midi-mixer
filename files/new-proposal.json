@@ -1,0 +1,137 @@
+{
+  "tracks": [
+    {
+      "channel": 1,
+      "name": "Track 1",
+    },
+    {
+      "channel": 2,
+      "name": "Track 2",
+      "fader": {
+        "default": -10
+      }
+    },
+    // reverse fader and knob
+    {
+      "channel": 3,
+      "name": "Track 3",
+      "fader": {
+        "router": {
+          "name": "azim"
+        }
+      },
+      "knob": {
+        "router": {
+          "name": "knob"
+        }
+      }
+    },
+    // possible but weird, this router can still be acceded globally
+    {
+      "channel": 4,
+      "name": "Track 4",
+      "fader": {
+        "router": {
+          "name": "frequency",
+          "type": "linear",
+          "services": [
+            {
+              "type": "max",
+              "command": "name",
+              "suffix": "-freq"
+            }
+          ]
+        }
+      }
+    }
+    // we declare globally a router, but it is used only on Track 5
+    {
+      "channel": 5,
+      "name": "Track 5",
+      "fader": {
+        "router": {
+          "name": "reverb"
+        }
+      }
+    },
+    // still a volume but different service
+    {
+      "channel": 6,
+      "name": "Track 6",
+      "fader": {
+        "router": {
+          "name": "volume",
+          "services": [{
+            "type": "max",
+            "command": "name",
+            "prefix": "volume-"
+          }]
+        }
+      }
+    },
+    {
+      "channel": 7,
+      "name": "Track 7",
+    },
+    {
+      "channel": 8,
+      "name": "Track 8",
+    }
+  ]
+"routers": [
+    {
+      "name": "volume",
+      "type": "dB",
+      "defaultEntrypoint": "fader",
+      "services": [
+        {
+          "type": "max",
+          "command": "name",
+          "suffix": "_lvl"
+        },
+        {
+          "type": "osc",
+          "command": "channel",
+          "prefix": "/track",
+          "suffix": "/gain"
+        }
+      ]
+    },
+    {
+      "name": "azim",
+      "type": "linear",
+      "range": [0, 360],
+      "defaultEntrypoint": "knob",
+      "services": [
+        {
+          "type": "max",
+          "command": "name",
+          "suffix": "_azim"
+        },
+        {
+          "type": "osc",
+          "command": "channel",
+          "prefix": ["track"],
+          "suffix": ["azim"]
+        }
+      ]
+    }
+    {
+      "name": "reverb",
+      "type": "dB",
+      "services": [
+        {
+          "type": "max",
+          "command": "name",
+          "suffix": "_rev"
+        },
+        {
+          "type": "osc",
+          "command": "channel",
+          "prefix": ["track"],
+          "suffix": ["reverb"]
+        }
+      ]
+    }
+  ]
+}
