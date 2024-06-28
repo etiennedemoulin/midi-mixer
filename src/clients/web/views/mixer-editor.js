@@ -4,7 +4,7 @@ import JSON5 from 'json5';
 import '@ircam/sc-components/sc-text.js';
 import '@ircam/sc-components/sc-select.js';
 import '@ircam/sc-components/sc-editor.js';
-import '@ircam/sc-components/sc-button.js';
+import '@ircam/sc-components/sc-filetree.js';
 
 class MixerEditor extends LitElement {
   static styles = css`
@@ -35,23 +35,31 @@ class MixerEditor extends LitElement {
   constructor() {
     super();
 
-    this.core = null;
+    this.globals = null;
+    this.filesystem = null;
   }
 
   render() {
     super.render();
 
     const height = window.innerHeight;
-    const config = this.core.get('config');
+    // const mod = await import(`../../${globals.get('config').path}`);
+    // const appConfig = mod.default;
+    const appConfig = "pouet";
+
     return html`
       <div>
+        <p>${this.globals.get('config').name}</p>
+        <sc-filetree
+          style="width:200px;height:${height - 30 - 30}px"
+          .value="${this.filesystem.getTree()}"
+          @input=${e => this.globals.set({ config: e.detail.value })}
+        ></sc-filetree>
       </div>
       <sc-editor
-        value="${ JSON.stringify(config.target, null, 2) }"
-        @change="${e => {
-          config.target = JSON.parse(e.detail.value);
-          this.core.set({ config: config}, { source: 'web' })
-        }}"
+        .value=${ appConfig }
+        @change=${e => this.filesystem.writeFile(this.globals.get('config').relPath, e.detail.value)}
+        save-button
       ></sc-editor>
 
     `
@@ -60,7 +68,7 @@ class MixerEditor extends LitElement {
   connectedCallback() {
     super.connectedCallback();
 
-    this.core.onUpdate(() => this.requestUpdate());
+    this.globals.onUpdate(() => this.requestUpdate());
   }
 }
 

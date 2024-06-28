@@ -13,6 +13,7 @@ Clone the repo, `cd midi-mixer` then `npm install && npm run dev`.
   + channel > 8 can be accessed by pressing the "next page" button
 - **name** : [string] name printed on device screen
 - **scale** : [function / table] - transfert function used to convert slider value to sound-related value
+  - espace de départ entre 0 et 1
 - **osc** : [string] share param in OSC
 - **max** : [string] send/receive name in Max
 - **default** : [number] default value

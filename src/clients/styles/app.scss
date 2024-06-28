@@ -1,8 +1,6 @@
 :root {
   --sw-background-color: #000000;
-  --sw-medium-background-color: #121212;
   --sw-light-background-color: #242424;
-  --sw-lighter-background-color: #363636;
   --sw-font-color: #ffffff;
   --sw-light-font-color: #cccccc;
   --sw-font-color-error: #a94442;
@@ -21,11 +19,6 @@ html {
   font-size: var(--sw-font-size);
 }
 
-body {
-  display: flex;
-  flex-wrap: wrap;
-}
-
 * {
   box-sizing: border-box;
   font-family: var(--sw-font-family);
@@ -37,20 +30,49 @@ body.loading {
   background-repeat: no-repeat;
 }
 
-.simple-layout {
+
+simple-layout {
   display: block;
-  flex-grow: 1;
-  padding: 20px;
-  position: relative;
+  min-height: 100vh;
+
+  & > div {
+    height: 100%;
+    width: 100%;
+  }
+
+  sw-infos-button {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1001;
+  }
+
+  .active-page {
+    width: 37px;
+    height: 30px;
+  }
+
+  sw-credits {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    width: 100vw;
+  }
+
+
 }
 
 // default styles for controller layout
-.controller-layout {
+controller-layout {
   display: block;
-  flex-grow: 1;
-  position: relative;
+  min-height: 100vh;
 
-  & > header {
+  & > div {
+    padding: 20px;
+  }
+
+  header {
     display: block;
     height: 38px;
     line-height: 38px;
@@ -59,21 +81,58 @@ body.loading {
     flex-direction: row;
     justify-content: space-between;
     border-bottom: 1px solid var(--sw-lighter-background-color);
-
-    h1 {
-      font-size: 12px;
-      margin: 0;
-      padding-left: 20px;
-      max-width: 50%;
-      overflow: hidden;
-    }
-
-    sc-audit {
-      max-width: 50%;
-    }
   }
 
-  & > section {
-    padding: 20px;
+  header h1 {
+    font-size: 12px;
+    margin: 0;
+    padding-left: 20px;
   }
 }
+
+header {
+  min-height: 30px;
+  display: block;
+  background-color: #232323;
+  border-bottom: 1px solid #454545;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
+  & > div {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .midi-controls > div {
+    display: flex;
+    margin-right: 3px;
+
+    &:last-child {
+      margin-right: 0;
+    }
+
+    sc-text {
+      width: 70px;
+      font-size: 10px;
+    }
+
+    sc-button {
+      width: 70px;
+      font-size: 10px;
+    }
+
+    sc-select {
+      font-size: 10px;
+      width: 100px;
+    }
+
+    sc-number {
+      font-size: 10px;
+      width: 70px;
+    }
+  }
+}
+

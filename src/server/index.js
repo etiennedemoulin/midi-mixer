@@ -1,8 +1,19 @@
 import '@soundworks/helpers/polyfills.js';
 import { Server } from '@soundworks/core/server.js';
+import filesystemPlugin from '@soundworks/plugin-filesystem/server.js';
 import { loadConfig } from '@soundworks/helpers/node.js';
 
+import fs from 'fs-extra';
+import path from 'path';
+import JSON5 from 'json5';
+
+import { globalsSchema } from './schemas/globals.js';
+import updateTracks from './update-tracks.js';
+
 import '../utils/catch-unhandled-errors.js';
+
+import { rawToUser, userToRaw } from '../utils/basis-conversions.js';
+
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -28,13 +39,35 @@ server.useDefaultApplicationTemplate();
 /**
  * Register plugins and schemas
  */
-// server.pluginManager.register('my-plugin', plugin);
-// server.stateManager.registerSchema('my-schema', definition);
+server.pluginManager.register('filesystem', filesystemPlugin, { dirname: 'midi-config'});
+server.stateManager.registerSchema('globals', globalsSchema);
 
-/**
- * Launch application (init plugins, http server, etc.)
- */
 await server.start();
 
-// and do your own stuff!
+const filesystem = await server.pluginManager.get('filesystem');
+const globals = await server.stateManager.create('globals', {
+  config: filesystem.getTree().children[0]
+});
 
+let tracks;
+
+async function loadAppConfig() {
+  const tree = filesystem.getTree();
+  const mod = await import(`../../${globals.get('config').path}`);
+  const appConfig = mod.default;
+  // globals.set({ config: appConfig });
+  await updateTracks(server, appConfig);
+  tracks = await server.stateManager.getCollection('tracks');
+}
+
+globals.onUpdate(async (updates) => {
+  if ('config' in updates) {
+    await loadAppConfig();
+  }
+
+  console.log(globals.getValues());
+}, true);
+
+filesystem.onUpdate(async function () {
+  await loadAppConfig();
+});

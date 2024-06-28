@@ -1,18 +1,8 @@
-import configParser from './config-parser.js';
-import generateSchemaFromConfig from './generate-schema-from-config.js';
-import util from 'node:util';
+import ssl from '../tables/ssl.js';
 import { linearScale } from '@ircam/sc-utils';
+const scale = linearScale(0, 1, -12, 12);
 
-// const scale = linearScale('linear', 0, 1, -6, 6);
-
-
-// const scale = val => val*2;
-const maxout = 6;
-const minout = -6;
-const scale = x => (maxout - minout) * x + minout;
-const ssl = [0, 1, 2, 3, 4];
-
-const config = {
+export default {
   tracks: [
     {
       channel: [1, 8],
@@ -26,13 +16,13 @@ const config = {
           scale: ssl,
           osc: (channel, name, key) => `/track/${channel}/${key}`,
           max: (channel, name, key) => `${channel}_${key}`,
-          default: 0,
+          default: 12,
         },
         azim: {
           scale: scale,
           osc: (channel, name, key) => `/track/${channel}/${key}`,
           max: (channel, name, key) => `${channel}_${key}`,
-          default: 0,
+          default: -12,
         },
         entrypoint3: {
           name: "wow",
@@ -58,19 +48,21 @@ const config = {
           scale: scale
         }
       }
+    },
+    {
+      channel: 12,
+      name: "oh",
+      mapping: {
+        fader: 'volume'
+      },
+      entrypoints: {
+        volume: {
+          scale: ssl,
+          osc: (channel, name, key) => `/track/${channel}/${key}`,
+          max: (channel, name, key) => `${channel}_${key}`,
+          default: 0,
+        }
+      }
     }
   ]
 };
-
-const staticConfig = configParser(config);
-const schema = generateSchemaFromConfig(staticConfig);
-// console.log(util);
-// util.inspect(result, false, null, true);
-
-console.log(util.inspect(schema, { depth: null }));
-
-
-const str = scale.toString();
-const test = eval(str);
-
-// console.log(str);

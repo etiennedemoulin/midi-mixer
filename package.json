@@ -3,7 +3,7 @@
   "description": "soundworks application",
   "authors": [],
   "license": "BSD-3-Clause",
-  "version": "0.0.0",
+  "version": "2.0.2",
   "type": "module",
   "private": true,
   "scripts": {
@@ -14,15 +14,22 @@
     "watch": "soundworks-build -p",
     "watch:inspect": "soundworks-build -i -p",
     "watch:sass": "sass --watch src/clients/styles:.build/public/css",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "electron:dev": "soundworks-electron dev",
+    "electron:build": "soundworks-electron build",
+    "max:dev": "npm run build && rm -R max/midi-mixer/javascript && mkdir max/midi-mixer/javascript && cp -R .build max/midi-mixer/javascript && cp -R public max/midi-mixer/javascript && cp -R config max/midi-mixer/javascript && esbuild ./src/server/index.js  --bundle --watch --format=cjs --platform=node --external:max-api --outfile=max/midi-mixer/javascript/midi-mixer.cjs",
+    "max:build": "esbuild ./src/server/index.js  --bundle --format=cjs --platform=node --external:max-api --outfile=max/midi-mixer/javascript/midi-mixer.cjs"
   },
   "dependencies": {
-    "@ircam/sc-components": "^3.0.0-alpha.60",
+    "@ircam/sc-components": "^3.0.0-alpha.65",
     "@ircam/sc-utils": "^1.4.0",
-    "@soundworks/core": "^4.0.0-alpha.21",
-    "@soundworks/helpers": "^1.0.0-alpha.12",
+    "@soundworks/core": "^4.0.0-alpha.25",
+    "@soundworks/helpers": "^1.0.0-alpha.14",
+    "@soundworks/plugin-filesystem": "^2.0.0-alpha.6",
     "json5": "^2.2.3",
-    "lit": "^3.1.3"
+    "jzz": "^1.8.5",
+    "lit": "^3.1.3",
+    "node-osc": "^9.1.3"
   },
   "devDependencies": {
     "@ircam/eslint-config": "^1.2.1",
