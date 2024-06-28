@@ -19,15 +19,15 @@ export const globalsSchema = {
     type: "integer",
     min: 0,
     max: Infinity,
-    default: 4002
+    default: 4001
   },
   oscClientPort: {
     type: "integer",
     min: 0,
     max: Infinity,
-    default: 4001
+    default: 4002
   },
-  oscServerAddress: {
+  oscClientAddress: {
     type: "string",
     default: '127.0.0.1'
   },

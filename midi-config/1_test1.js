@@ -16,7 +16,7 @@ export default {
           scale: ssl,
           osc: (channel, name, key) => `/track/${channel}/${key}`,
           max: (channel, name, key) => `${channel}_${key}`,
-          default: 12,
+          default: 1,
         },
         azim: {
           scale: scale,

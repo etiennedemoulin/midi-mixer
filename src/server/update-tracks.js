@@ -7,8 +7,8 @@ export default async function updateTracks(server, config) {
 
   const staticAppConfig = configParser(config);
   const trackSchema = generateSchemaFromConfig(staticAppConfig);
-
-  server.stateManager.registerSchema('tracks', trackSchema);
+  await server.stateManager.deleteSchema('tracks');
+  await server.stateManager.registerSchema('tracks', trackSchema);
   const tracks = []
 
   const channels = staticAppConfig.tracks.map(tracks => parseInt(tracks.channel))

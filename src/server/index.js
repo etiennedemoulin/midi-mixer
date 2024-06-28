@@ -14,6 +14,8 @@ import '../utils/catch-unhandled-errors.js';
 
 import { rawToUser, userToRaw } from '../utils/basis-conversions.js';
 
+import OSCService from '../services/OSCService.js';
+
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -58,16 +60,19 @@ async function loadAppConfig() {
   // globals.set({ config: appConfig });
   await updateTracks(server, appConfig);
   tracks = await server.stateManager.getCollection('tracks');
+
+  console.log(tracks.getValues());
+  new OSCService(server);
+
 }
 
 globals.onUpdate(async (updates) => {
   if ('config' in updates) {
     await loadAppConfig();
   }
-
-  console.log(globals.getValues());
 }, true);
 
 filesystem.onUpdate(async function () {
   await loadAppConfig();
 });
+
