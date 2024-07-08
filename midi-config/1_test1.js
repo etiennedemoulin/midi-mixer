@@ -16,7 +16,7 @@ export default {
           scale: ssl,
           osc: (channel, name, key) => `/track/${channel}/${key}`,
           max: (channel, name, key) => `${channel}_${key}`,
-          default: 1,
+          default: -100,
         },
         azim: {
           scale: scale,
@@ -37,7 +37,7 @@ export default {
       name: "pouet",
       entrypoints: {
         volume: {
-          default: -10
+          default: -111
         },
       }
     },

@@ -3,7 +3,7 @@ import ssl from '../tables/ssl.js';
 export default {
   tracks: [
     {
-      channel: 1,
+      channel: 4,
       name: "Help Chan 1",
       mapping: {
         fader: "volume"
@@ -11,8 +11,8 @@ export default {
       entrypoints: {
         volume: {
           scale: ssl,
-          max: "help-chan-1",
-          default: 0
+          max: "help-chan-12",
+          default: -1
         }
       }
     }

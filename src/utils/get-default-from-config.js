@@ -1,3 +1,6 @@
+import { userToRaw } from './basis-conversions.js';
+
+
 export default function getDefaultFromConfig(config, channel) {
   const defaultsValues = {};
   const track = config.tracks.find(f => f.channel === channel);
@@ -29,7 +32,9 @@ export default function getDefaultFromConfig(config, channel) {
         }
 
         if ('default' in track.entrypoints[entrypoint]) {
-          defaultsValues[`${entrypoint}_raw`] = track.entrypoints[entrypoint].default;
+          // default value in config is used based
+          const userDefaultValue = track.entrypoints[entrypoint].default;
+          defaultsValues[`${entrypoint}_raw`] = userToRaw(userDefaultValue, track.entrypoints[entrypoint].scale);
         }
       })
     }

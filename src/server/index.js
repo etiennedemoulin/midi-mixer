@@ -61,7 +61,7 @@ async function loadAppConfig() {
   await updateTracks(server, appConfig);
   tracks = await server.stateManager.getCollection('tracks');
 
-  console.log(tracks.getValues());
+  // console.log(tracks.getValues());
   new OSCService(server);
 
 }
@@ -76,3 +76,8 @@ filesystem.onUpdate(async function () {
   await loadAppConfig();
 });
 
+
+
+// @BUGS
+// unable to change config file on the fly, update is not recognized
+// then, take a look into OSCService
