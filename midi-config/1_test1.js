@@ -14,7 +14,7 @@ export default {
       entrypoints: {
         volume: {
           scale: ssl,
-          osc: (channel, name, key) => `/track/${channel}/${key}`,
+          osc: (channel, name, key) => `/track/${channel}/gain`,
           max: (channel, name, key) => `${channel}_${key}`,
           default: -100,
         },

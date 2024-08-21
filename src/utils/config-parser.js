@@ -59,7 +59,7 @@ export default function configParser(config) {
       }
 
       if (!track.entrypoints) {
-        throw new Error('no entrypoint for track ' + track.channel);
+        return;
       }
 
       Object.keys(track.entrypoints).forEach(entrypoint => {

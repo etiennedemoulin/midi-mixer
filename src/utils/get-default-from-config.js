@@ -17,27 +17,35 @@ export default function getDefaultFromConfig(config, channel) {
     if (key === 'entrypoints') {
       const entrypoints = Object.keys(track.entrypoints);
       entrypoints.forEach(entrypoint => {
-        if ('scale' in track.entrypoints[entrypoint]) {
-          defaultsValues[`${entrypoint}_scale`] = track.entrypoints[entrypoint].scale;
+        const entrypointKey = track.entrypoints[entrypoint];
+
+        if ('scale' in entrypointKey) {
+          defaultsValues[`${entrypoint}_scale`] = entrypointKey.scale;
           // console.log(entrypoint);
         }
 
-        if ('osc' in track.entrypoints[entrypoint]) {
-          defaultsValues[`${entrypoint}_osc`] = track.entrypoints[entrypoint].osc;
+        if ('osc' in entrypointKey) {
+          defaultsValues[`${entrypoint}_osc`] = entrypointKey.osc;
           // console.log(entrypoint);
         }
 
-        if ('max' in track.entrypoints[entrypoint]) {
-          defaultsValues[`${entrypoint}_max`] = track.entrypoints[entrypoint].max
+        if ('max' in entrypointKey) {
+          defaultsValues[`${entrypoint}_max`] = entrypointKey.max
         }
 
         if ('default' in track.entrypoints[entrypoint]) {
           // default value in config is used based
           const userDefaultValue = track.entrypoints[entrypoint].default;
-          defaultsValues[`${entrypoint}_raw`] = userToRaw(userDefaultValue, track.entrypoints[entrypoint].scale);
+          if (defaultsValues[`${entrypoint}_scale`]) {
+            defaultsValues[`${entrypoint}_raw`] = userToRaw(userDefaultValue,
+              defaultsValues[`${entrypoint}_scale`]);
+            } else {
+              throw new Error(`scale is not defined for entrypoint ${entrypoint}`);
+            }
         }
       })
     }
   });
+
   return defaultsValues;
 }

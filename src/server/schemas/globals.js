@@ -15,6 +15,11 @@ export const globalsSchema = {
     default: null,
     nullable: true
   },
+  availableMidiPorts: {
+    type: "any",
+    default: null,
+    nullable: true
+  },
   oscServerPort: {
     type: "integer",
     min: 0,

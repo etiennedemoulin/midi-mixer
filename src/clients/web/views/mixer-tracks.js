@@ -107,7 +107,7 @@ class MixerTracks extends LitElement {
               ?disabled=${track.get('disabled')}
               .value=${track.get(`${mapping.fader}_raw`)}
               orientation="vertical"
-              @input=${e => track.set({ [`${mapping.fader}_raw`]: e.detail.value })}
+              @input=${e => track.set({ [`${mapping.fader}_raw`]: e.detail.value }, { source:"web" })}
             ></sc-slider>
           ` : html`
             <sc-slider
@@ -124,7 +124,7 @@ class MixerTracks extends LitElement {
                 min=${faderTableBoundaries[0]}
                 max=${faderTableBoundaries[1]}
                 .value=${rawToUser(track.get(`${mapping.fader}_raw`), faderTable)}
-                @input=${e => track.set({ [`${mapping.fader}_raw`]: userToRaw(e.detail.value, faderTable) })}
+                @input=${e => track.set({ [`${mapping.fader}_raw`]: userToRaw(e.detail.value, faderTable) }, { source: "web" })}
               ></sc-number>
             ` : html`
               <sc-number
@@ -138,7 +138,7 @@ class MixerTracks extends LitElement {
               <sc-toggle
                 ?disabled=${track.get('disabled')}
                 ?active=${track.get(`${mapping.mute}_raw`)}
-                @change=${e => track.set({ [`${mapping.fader}_raw`]: e.detail.value })}
+                @change=${e => track.set({ [`${mapping.fader}_raw`]: e.detail.value }, { source: "web" })}
               ></sc-toggle>` : html`
               <sc-toggle
                 ?disabled=${true}

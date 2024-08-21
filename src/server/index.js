@@ -15,6 +15,7 @@ import '../utils/catch-unhandled-errors.js';
 import { rawToUser, userToRaw } from '../utils/basis-conversions.js';
 
 import OSCService from '../services/OSCService.js';
+import MidiService from '../services/MidiService.js';
 
 
 // - General documentation: https://soundworks.dev/
@@ -51,18 +52,17 @@ const globals = await server.stateManager.create('globals', {
   config: filesystem.getTree().children[0]
 });
 
-let tracks;
-
 async function loadAppConfig() {
   const tree = filesystem.getTree();
   const mod = await import(`../../${globals.get('config').path}`);
   const appConfig = mod.default;
   // globals.set({ config: appConfig });
   await updateTracks(server, appConfig);
-  tracks = await server.stateManager.getCollection('tracks');
 
-  // console.log(tracks.getValues());
+  const tracks = await server.stateManager.getCollection('tracks');
+
   new OSCService(server);
+  new MidiService(server);
 
 }
 
@@ -78,6 +78,6 @@ filesystem.onUpdate(async function () {
 
 
 
-// @BUGS
-// unable to change config file on the fly, update is not recognized
-// then, take a look into OSCService
+// @TODO
+// unable to change config file on the fly, update are not recognized
+

@@ -20,8 +20,8 @@ class OSCService {
     this.globals = await this.node.stateManager.attach('globals');
     this.globals.onUpdate(this.createOSCServer, true);
     this.tracks.forEach(track => {
-      track.onUpdate((updates) => {
-        this.onTrackUpdate(updates, track);
+      track.onUpdate((updates, values, context) => {
+        this.onTrackUpdate(updates, track, context);
       });
     });
   }
@@ -52,13 +52,19 @@ class OSCService {
           const entrypointName = key.split('_')[0];
           const oscValue = parseFloat(msg[1]);
           const table = track.get(`${entrypointName}_scale`);
-          track.set({ [`${entrypointName}_raw`]: userToRaw(oscValue, table) })
+          track.set({
+            [`${entrypointName}_raw`]: userToRaw(oscValue, table),
+          }, { source: "osc" });
         }
       })
     })
   }
 
-  onTrackUpdate(updates, track) {
+  onTrackUpdate(updates, track, context) {
+    if (context.source === 'osc') {
+      return;
+    }
+
     if (!this.oscServer) {
       return;
     }
@@ -69,7 +75,11 @@ class OSCService {
     const entrypointName = Object.keys(updates)[0].split('_')[0];
     const oscValue = updates[`${entrypointName}_raw`];
     const table = track.get(`${entrypointName}_scale`);
-    oscClient.send(track.get(`${entrypointName}_osc`), rawToUser(oscValue, table), () => oscClient.close());
+    try {
+      oscClient.send(track.get(`${entrypointName}_osc`), rawToUser(oscValue, table), () => oscClient.close());
+      } catch(err) {
+        throw new Error(`no osc address defined for entrypoint ${entrypointName}`);
+      }
   }
 
 }

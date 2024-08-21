@@ -4,18 +4,21 @@ import getDefaultFromConfig from '../utils/get-default-from-config.js';
 
 
 export default async function updateTracks(server, config) {
+  // delete schema
+  await server.stateManager.deleteSchema('tracks');
 
+  // parse new config
   const staticAppConfig = configParser(config);
   const trackSchema = generateSchemaFromConfig(staticAppConfig);
-  await server.stateManager.deleteSchema('tracks');
+  // create collection & schema
+  const tracks = [];
   await server.stateManager.registerSchema('tracks', trackSchema);
-  const tracks = []
 
   const channels = staticAppConfig.tracks.map(tracks => parseInt(tracks.channel))
   const maxTrackIndex = Math.max(...channels);
 
   if (maxTrackIndex + 1 > tracks.length) {
-    console.log(`- create tracks from ${tracks.length} to ${maxTrackIndex}`);
+    // console.log(`- create tracks from ${tracks.length} to ${maxTrackIndex}`);
 
     for (let i = tracks.length; i < maxTrackIndex + 1; i++) {
       tracks[i] = await server.stateManager.create('tracks');
@@ -38,7 +41,7 @@ export default async function updateTracks(server, config) {
       }
     }
   } else {
-    console.log(`- delete tracks from ${maxTrackIndex + 1} to ${tracks.length -1}`);
+    // console.log(`- delete tracks from ${maxTrackIndex + 1} to ${tracks.length -1}`);
 
     for (let i = tracks.length -1; i > maxTrackIndex; i--) {
       const track = tracks.find(s => s.get('channel') === i);
@@ -60,10 +63,12 @@ export default async function updateTracks(server, config) {
   // apply updates on changed tracks
   channels.forEach(async channel => {
     const track = tracks.find(s => s.get('channel') === channel);
-    console.log(`update channel ${track.get('channel')}`);
+    // console.log(`update channel ${track.get('channel')}`);
     const updates = getDefaultFromConfig(staticAppConfig, channel);
     // console.log(updates);
     await track.set(updates);
   })
+
+  return tracks;
 
 }
