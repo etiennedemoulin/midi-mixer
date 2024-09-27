@@ -40,10 +40,10 @@ export function rawToBytes(raw) {
   const decimal = parseInt(raw * (Math.pow(2,14) - 1));
   const msb = decimal >> 7;
   const lsb = decimal & 0b00000001111111;
-  return [msb, lsb];
+  return [lsb, msb];
 }
 
-export function bytesToRaw(msb, lsb) {
+export function bytesToRaw(lsb, msb) {
   const decimal = (msb << 7 | lsb);
   const raw = decimal / (Math.pow(2, 14) - 1);
   return raw;

@@ -8,15 +8,15 @@ export default {
       channel: [1, 8],
       name: channel => `Track ${channel}`,
       mapping: {
-        fader: "volume",
-        knob: "azim",
+        knob: "volume",
+        fader: "azim",
       },
-      entrypoints: {
+      parameters: {
         volume: {
           scale: ssl,
           osc: (channel, name, key) => `/track/${channel}/gain`,
           max: (channel, name, key) => `${channel}_${key}`,
-          default: -100,
+          default: 0,
         },
         azim: {
           scale: scale,
@@ -35,7 +35,7 @@ export default {
     {
       channel: 2,
       name: "pouet",
-      entrypoints: {
+      parameters: {
         volume: {
           default: -111
         },
@@ -43,7 +43,7 @@ export default {
     },
     {
       channel: 3,
-      entrypoints: {
+      parameters: {
         volume: {
           scale: scale
         }
@@ -52,10 +52,7 @@ export default {
     {
       channel: 12,
       name: "oh",
-      mapping: {
-        fader: 'volume'
-      },
-      entrypoints: {
+      parameters: {
         volume: {
           scale: ssl,
           osc: (channel, name, key) => `/track/${channel}/${key}`,

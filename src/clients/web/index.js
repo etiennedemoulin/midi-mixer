@@ -13,7 +13,8 @@ import '@ircam/sc-components/sc-select.js';
 import '@ircam/sc-components/sc-number.js';
 import '@ircam/sc-components/sc-button.js';
 
-import filesystemPlugin from '@soundworks/plugin-filesystem/client.js';
+import pluginScripting from '@soundworks/plugin-scripting/client.js';
+import '@soundworks/plugin-scripting/components/sw-plugin-scripting.js';
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -33,7 +34,7 @@ async function main($container) {
   const client = new Client(config);
 
   launcher.register(client, { initScreensContainer: $container });
-  client.pluginManager.register('filesystem', filesystemPlugin, { dirname: 'midi-config'});
+  client.pluginManager.register('scripting', pluginScripting);
 
   /**
    * Launch application
@@ -42,11 +43,11 @@ async function main($container) {
 
   const tracks = await client.stateManager.getCollection('tracks');
   const globals = await client.stateManager.attach('globals');
-  const filesystem = await client.pluginManager.get('filesystem');
+  const scripting = await client.pluginManager.get('scripting');
 
   globals.onUpdate(() => {
     $layout.requestUpdate();
-  })
+  });
 
   const $layout = createLayout(client, $container);
 
@@ -54,6 +55,7 @@ async function main($container) {
 
   const mixerView = html`
     <mixer-tracks
+      .globals=${globals}
       .tracks=${tracks}
     ></mixer-tracks>
   `;
@@ -61,7 +63,7 @@ async function main($container) {
   const editorView = html`
     <mixer-editor
       .globals=${globals}
-      .filesystem=${filesystem}
+      .scripting=${scripting}
     ></mixer-editor>
   `;
 
@@ -142,6 +144,11 @@ async function main($container) {
               <sc-text
                 style="width:150px;"
               >${globals.get('config').name}</sc-text>
+            </div>
+            <div>
+              <sc-text
+                style="width:150px;"
+              >${globals.get('activePage')}</sc-text>
             </div>
             <div>
               <sc-button

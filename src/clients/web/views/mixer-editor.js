@@ -6,16 +6,15 @@ import '@ircam/sc-components/sc-select.js';
 import '@ircam/sc-components/sc-editor.js';
 import '@ircam/sc-components/sc-filetree.js';
 
+import '@soundworks/plugin-scripting/components/sw-plugin-scripting.js';
+
 class MixerEditor extends LitElement {
   static styles = css`
     :host {
       display: flex;
+      flex-direction: column;
       min-height: calc(100vh - 30px);
       align-items: stretch;
-    }
-
-    :host > div {
-      width: 200px;
     }
 
     p {
@@ -25,9 +24,8 @@ class MixerEditor extends LitElement {
       text-indent: 8px;
     }
 
-    sc-editor {
-      width: calc(100% - 200px);
-      height: inherit;
+    sw-plugin-scripting {
+      height: 500px;
     }
 
   `;
@@ -36,7 +34,7 @@ class MixerEditor extends LitElement {
     super();
 
     this.globals = null;
-    this.filesystem = null;
+    this.scripting = null;
   }
 
   render() {
@@ -48,20 +46,29 @@ class MixerEditor extends LitElement {
     const appConfig = "pouet";
 
     return html`
-      <div>
-        <p>${this.globals.get('config').name}</p>
-        <sc-filetree
-          style="width:200px;height:${height - 30 - 30}px"
-          .value="${this.filesystem.getTree()}"
-          @input=${e => this.globals.set({ config: e.detail.value })}
-        ></sc-filetree>
+      <p>${this.globals.get('config').name}</p>
+      <div style="padding-bottom: 4px;">
+        <sc-text>midi in:</sc-text>
+        <sc-select
+          .options=${this.globals.get('availableMidiPorts').inputs}
+          @change=${e => this.globals.set({midiInPort: e.detail.value})}
+          .value=${this.globals.get('midiInPort')}
+        ></sc-select>
       </div>
-      <sc-editor
-        .value=${ appConfig }
-        @change=${e => this.filesystem.writeFile(this.globals.get('config').relPath, e.detail.value)}
-        save-button
-      ></sc-editor>
-
+      <div style="padding-bottom: 4px;">
+        <sc-text>midi out:</sc-text>
+        <sc-select
+          .options=${this.globals.get('availableMidiPorts').outputs}
+          @change=${e => this.globals.set({midiOutPort: e.detail.value})}
+          .value=${this.globals.get('midiOutPort')}
+        ></sc-select>
+      </div>
+      <div style="padding-bottom: 4px;">
+        <sc-text>Mapping:</sc-text>
+      </div>
+      <div>
+        <sw-plugin-scripting .plugin=${this.scripting}></sw-plugin-scripting>
+      <div>
     `
   }
 

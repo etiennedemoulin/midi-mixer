@@ -40,5 +40,13 @@ export const globalsSchema = {
     type: "any",
     default: null,
     nullable: true
-  }
+  },
+  parameterNames: {
+    type: 'any',
+    default: [],
+  },
+  mapping: {
+    type: 'any',
+    default: {},
+  },
 }

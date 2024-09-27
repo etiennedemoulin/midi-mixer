@@ -1,7 +1,7 @@
 class MaxService {
-  constructor(node) {
+  constructor(node, Max) {
     this.node = node;
-
+    this.Max = Max;
 
 
     this.init();

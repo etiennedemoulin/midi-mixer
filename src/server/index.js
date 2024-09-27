@@ -1,22 +1,15 @@
+import '../utils/catch-unhandled-errors.js';
 import '@soundworks/helpers/polyfills.js';
 import { Server } from '@soundworks/core/server.js';
-import filesystemPlugin from '@soundworks/plugin-filesystem/server.js';
+import pluginScriptingFactory from '@soundworks/plugin-scripting/server.js';
 import { loadConfig } from '@soundworks/helpers/node.js';
-
-import fs from 'fs-extra';
-import path from 'path';
-import JSON5 from 'json5';
 
 import { globalsSchema } from './schemas/globals.js';
 import updateTracks from './update-tracks.js';
 
-import '../utils/catch-unhandled-errors.js';
-
-import { rawToUser, userToRaw } from '../utils/basis-conversions.js';
-
-import OSCService from '../services/OSCService.js';
-import MidiService from '../services/MidiService.js';
-
+import OSCService from './services/OSCService.js';
+import MidiService from './services/MidiService.js';
+import MaxService from './services/MaxService.js';
 
 // - General documentation: https://soundworks.dev/
 // - API documentation:     https://soundworks.dev/api
@@ -42,28 +35,48 @@ server.useDefaultApplicationTemplate();
 /**
  * Register plugins and schemas
  */
-server.pluginManager.register('filesystem', filesystemPlugin, { dirname: 'midi-config'});
+server.pluginManager.register('scripting', pluginScriptingFactory, {
+  dirname: 'midi-config'
+});
 server.stateManager.registerSchema('globals', globalsSchema);
 
 await server.start();
 
-const filesystem = await server.pluginManager.get('filesystem');
+const scripting = await server.pluginManager.get('scripting');
 const globals = await server.stateManager.create('globals', {
-  config: filesystem.getTree().children[0]
+  config: scripting.getList()[0]
 });
 
+let currentScript = null;
+let oscService = null;
+let midiService = null;
+
 async function loadAppConfig() {
-  const tree = filesystem.getTree();
-  const mod = await import(`../../${globals.get('config').path}`);
+  if (currentScript) {
+    await currentScript.detach();
+  }
+
+  currentScript = await scripting.attach(globals.get('config'));
+  // not very subtle...
+  currentScript.onUpdate(() => loadAppConfig());
+  const mod = await currentScript.import();
   const appConfig = mod.default;
-  // globals.set({ config: appConfig });
-  await updateTracks(server, appConfig);
 
-  const tracks = await server.stateManager.getCollection('tracks');
+  const tracks = await updateTracks(server, globals, appConfig);
 
-  new OSCService(server);
-  new MidiService(server);
+  // create the services only once
+  if (oscService) { await oscService.close(); }
+  if (midiService) { await midiService.close(); }
 
+  oscService = new OSCService(server);
+  midiService = new MidiService(server);
+
+  // try {
+  //   const Max = require('max-api');
+  //   new MaxService(server, Max);
+  // } catch (err) {
+
+  // }
 }
 
 globals.onUpdate(async (updates) => {
@@ -72,8 +85,9 @@ globals.onUpdate(async (updates) => {
   }
 }, true);
 
-filesystem.onUpdate(async function () {
-  await loadAppConfig();
+// executed when a script is created or deleted
+scripting.onUpdate(async function () {
+
 });
 
 

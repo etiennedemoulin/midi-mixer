@@ -2,6 +2,8 @@ import { LitElement, html, css, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import JSON5 from 'json5';
 
+import { absToRelChannel } from '../../../utils/basis-conversions.js';
+
 import '@ircam/sc-components/sc-slider.js';
 import '@ircam/sc-components/sc-number.js';
 import '@ircam/sc-components/sc-toggle.js';
@@ -19,7 +21,7 @@ class MixerTracks extends LitElement {
 
     .track {
       width: 80px;
-      border: 2px solid #343434;
+      border: 1px solid #343434;
       background-color: #121212;
       padding: 4px;
       display: flex;
@@ -33,7 +35,11 @@ class MixerTracks extends LitElement {
     }
 
     .track.active {
-      background-color: pink;
+      background-color: #363636;
+    }
+
+    .track.in-page {
+      border-color: #565656;
     }
 
     p {
@@ -77,19 +83,25 @@ class MixerTracks extends LitElement {
     super();
 
     this.tracks = null;
+    this.globals = null;
   }
 
   render() {
+    const activePage = this.globals.get('activePage');
+
     return this.tracks.map(track => {
+      const absChannel = track.get('channel');
+      const relChannel = absToRelChannel(absChannel);
+      const inPage = relChannel + (activePage * 8) === absChannel;
+
       const classes = {
-        track: true,
-        disabled: track.get('disabled'),
-        active: track.get('touched'),
+        'track': true,
+        'disabled': track.get('disabled'),
+        'active': track.get('touched'),
+        'in-page': inPage,
       };
 
       const mapping = track.get('mapping');
-
-
       const faderTable = mapping.fader ? track.get(`${mapping.fader}_scale`) : [0,1];
 
       const faderTableBoundaries = [faderTable[0], faderTable[faderTable.length - 1]];
@@ -160,6 +172,8 @@ class MixerTracks extends LitElement {
     this.tracks.onUpdate(() => this.requestUpdate());
     this.tracks.onAttach(() => this.requestUpdate());
     this.tracks.onDetach(() => this.requestUpdate());
+
+    this.globals.onUpdate(() => this.requestUpdate());
   }
 }
 

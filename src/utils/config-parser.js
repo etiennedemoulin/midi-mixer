@@ -1,10 +1,54 @@
 import { isFunction } from '@ircam/sc-utils';
+import cloneDeep from 'clone-deep';
 
+function sampleFunction(func) {
+  const size = 512;
+  const table = [];
 
-export default function configParser(config) {
-  const { tracks } = config;
+  for (let i = 0; i < size; i++) {
+    table[i] = func(i/size);
+  }
+
+  return table;
+}
+
+export function parseTrackConfig(config) {
+  const { parameters, mapping, tracks } = config;
+
+  if (!parameters || !mapping || !tracks) {
+    throw new Error('Invalid config file: "parameters", "mapping" and "tracks" are mandatory');
+  }
+
+  const parsedParameters = {};
   const parsedTracks = [];
-  const stepSize = 512;
+
+  for (let name in parameters) {
+    parsedParameters[name] = {};
+
+    if ('scale' in parameters[name]) {
+      if (isFunction(parameters[name].scale)) {
+        parsedParameters[name].scale = sampleFunction(parameters[name].scale);
+      } else if (Array.isArray(parameters[name].scale)) {
+        parsedParameters[name].scale = parameters[name].scale;
+      } else {
+        throw new Error('Invalid scale: should be either a function or an array');
+      }
+    } else {
+      parsedParameters[name].scale = [0, 1];
+    }
+
+    if ('max' in parameters[name]) {
+      parsedParameters[name].max = parameters[name].max;
+    }
+
+    if ('osc' in parameters[name]) {
+      parsedParameters[name].osc = parameters[name].osc;
+    }
+
+    if ('value' in parameters[name]) {
+      parsedParameters[name].value = parameters[name].value;
+    }
+  }
 
   tracks.forEach(track => {
     // replace with isNumber
@@ -37,73 +81,55 @@ export default function configParser(config) {
       }
 
       if ('mapping' in track) {
-        if (!parsedTrack.mapping) {
-          parsedTrack.mapping = {};
-        }
+        const mergedMapping = Object.assign({}, mapping, track.mapping);
+        parsedTrack.mapping = mergedMapping
+      } else {
+        parsedTrack.mapping = mapping;
+      }
 
-        if ("fader" in track.mapping) {
-          parsedTrack.mapping.fader = track.mapping.fader;
-        }
+      let clonedParameters = cloneDeep(parameters);
 
-        if ("knob" in track.mapping) {
-          parsedTrack.mapping.knob = track.mapping.knob;
-        }
-
-        if ("sel" in track.mapping) {
-          parsedTrack.mapping.sel = track.mapping.sel;
-        }
-
-        if ("mute" in track.mapping) {
-          parsedTrack.mapping.mute = track.mapping.mute;
+      if ('parameters' in track) {
+        for (let name in track.parameters) {
+          Object.assign(clonedParameters[name], track.parameters[name]);
         }
       }
 
-      if (!track.entrypoints) {
-        return;
-      }
+      for (let name in clonedParameters) {
+        const parameter = clonedParameters[name];
 
-      Object.keys(track.entrypoints).forEach(entrypoint => {
-        if (!parsedTrack.entrypoints) {
-          parsedTrack.entrypoints = {};
-        }
-
-        if (!parsedTrack.entrypoints[entrypoint]) {
-          parsedTrack.entrypoints[entrypoint] = {};
-        }
-
-        if ('scale' in track.entrypoints[entrypoint]) {
-          if (isFunction(track.entrypoints[entrypoint].scale)) {
-            parsedTrack.entrypoints[entrypoint].scale = [];
-            for (let i = 0; i < stepSize; i++) {
-              parsedTrack.entrypoints[entrypoint].scale[i] = track.entrypoints[entrypoint].scale(i/stepSize);
-            }
-          } else {
-            parsedTrack.entrypoints[entrypoint].scale = track.entrypoints[entrypoint].scale;
+        if ('scale' in parameter) {
+          if (isFunction(parameter.scale)) {
+            parameter.scale = sampleFunction(parameter.scale);
           }
         }
 
-        if ('osc' in track.entrypoints[entrypoint]) {
-          parsedTrack.entrypoints[entrypoint].osc = isFunction(track.entrypoints[entrypoint].osc)
-            ? track.entrypoints[entrypoint].osc(parsedTrack.channel, parsedTrack.name, entrypoint)
-            : track.entrypoints[entrypoint].osc;
+        if ('osc' in parameter) {
+          parameter.osc = isFunction(parameter.osc)
+            ? parameter.osc(parsedTrack.channel, parsedTrack.name, name)
+            : parameter.osc;
         }
 
-        if ('max' in track.entrypoints[entrypoint]) {
-          parsedTrack.entrypoints[entrypoint].max = isFunction(track.entrypoints[entrypoint].max)
-            ? track.entrypoints[entrypoint].max(parsedTrack.channel, parsedTrack.name, entrypoint)
-            : track.entrypoints[entrypoint].max;
+        if ('max' in parameter) {
+          parameter.max = isFunction(parameter.max)
+            ? parameter.max(parsedTrack.channel, parsedTrack.name, name)
+            : parameter.max;
         }
 
-        if ('default' in track.entrypoints[entrypoint]) {
-          parsedTrack.entrypoints[entrypoint].default = isFunction(track.entrypoints[entrypoint].default)
-            ? track.entrypoints[entrypoint].default(parsedTrack.channel, parsedTrack.name, entrypoint)
-            : track.entrypoints[entrypoint].default;
+        if ('value' in parameter) {
+          parameter.value = isFunction(parameter.value)
+            ? parameter.value(parsedTrack.channel, parsedTrack.name, name)
+            : parameter.value;
+
+          console.log(name, parsedTrack.channel, parameter.value);
         }
-      });
+      }
+
+      parsedTrack.parameters = clonedParameters;
     }
   });
 
   parsedTracks.sort((a, b) => a.channel < b.channel ? -1 : 1);
 
-  return { tracks: parsedTracks };
+  return parsedTracks;
 }

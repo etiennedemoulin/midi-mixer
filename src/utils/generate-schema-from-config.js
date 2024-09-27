@@ -1,5 +1,4 @@
-export default function generateSchemaFromConfig(config) {
-  const { tracks } = config;
+export default function generateSchemaFromConfig(tracks) {
   const trackSchema = {
     channel: {
       type: 'integer',
@@ -28,46 +27,35 @@ export default function generateSchemaFromConfig(config) {
   };
 
   tracks.forEach(track => {
-    if ('entrypoints' in track) {
-      const entrypoints = Object.keys(track.entrypoints);
-      entrypoints.forEach(entrypoint => {
+    for (let name in track.parameters) {
+      trackSchema[`${name}_raw`] = {
+        type: 'float',
+        min: 0,
+        max: 1,
+        default: null,
+        nullable: true
+      };
 
-        if ('scale' in track.entrypoints[entrypoint]) {
-          trackSchema[`${entrypoint}_scale`] = {
-            type: 'any',
-            default: [0,1],
-            nullable: true
-          }
-        }
+      trackSchema[`${name}_scale`] = {
+        type: 'any',
+        default: [0,1],
+        nullable: true
+      };
 
-        if ('osc' in track.entrypoints[entrypoint]) {
-          trackSchema[`${entrypoint}_osc`] = {
-            type: 'string',
-            default: null,
-            nullable: true
-          }
-        }
+      // these can stay null
+      trackSchema[`${name}_osc`] = {
+        type: 'string',
+        default: null,
+        nullable: true
+      };
 
-        if ('max' in track.entrypoints[entrypoint]) {
-          trackSchema[`${entrypoint}_max`] = {
-            type: 'string',
-            default: null,
-            nullable: true
-          }
-        }
-
-        if ('default' in track.entrypoints[entrypoint]) {
-          trackSchema[`${entrypoint}_raw`] = {
-            type: 'float',
-            min: 0,
-            max: 1,
-            default: null,
-            nullable: true
-          }
-        }
-      })
+      trackSchema[`${name}_max`] = {
+        type: 'string',
+        default: null,
+        nullable: true
+      };
     }
-  })
+  });
 
   return trackSchema;
 
